@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Datatypes;
+using FileElementNamespace;
+using ParameterNamespace;
 
 namespace Diffsync
 {
@@ -17,7 +18,8 @@ namespace Diffsync
             Console.WindowWidth = 130;
 
             // Arbeitsvariablen (aktuell hardgecodet):
-            parameter.Main_path = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\";
+            parameter.Path_complete_dir = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\";
+            parameter.Path_exchange_dir = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Desktop\test";
             parameter.Directory_exceptions = new List<string>();
             parameter.Directory_exceptions.Add("Benutzerdefinierte Office-Vorlagen");
             parameter.Directory_exceptions.Add("EON");
@@ -38,6 +40,9 @@ namespace Diffsync
             {
                 Environment.Exit(0);
             }
+
+            // Alle zu kopierenden Dateien kopieren
+            parameter.CopyFilesToExchangeDir();
         }
 
         static void PrintFilesToCopy(ref List<FileElement> files)
@@ -46,7 +51,7 @@ namespace Diffsync
             foreach (FileElement file_element in files)
             {
                 Console.WriteLine("{0}  {1}  {2}  {3:0.000} MB",
-                    file_element.Path,
+                    file_element.Path_to_print,
                     file_element.Date_created.ToString("yyyy-MM-dd HH:mm"),
                     file_element.Date_written.ToString("yyyy-MM-dd HH:mm"),
                     file_element.Size / 1024 / 1024);
