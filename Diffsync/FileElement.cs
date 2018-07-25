@@ -6,6 +6,11 @@ namespace FileElementNamespace
 {
     public class FileElement
     {
+        string _path;
+        double _size; // in Byte
+        DateTime _date_created;
+        DateTime _date_written;
+
         public string Path
         {
             get
@@ -76,11 +81,6 @@ namespace FileElementNamespace
         }
         public bool Will_be_copied { get; set; }
         //public bool Conflict { get; set; }
-
-        string _path;
-        double _size; // in Byte
-        DateTime _date_created;
-        DateTime _date_written;
 
         public FileElement()
         {

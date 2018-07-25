@@ -19,8 +19,7 @@ namespace Diffsync
 
             // Arbeitsvariablen (aktuell hardgecodet):
             parameter.Path_complete_dir = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\";
-            parameter.Path_exchange_dir = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Desktop\test";
-            parameter.Directory_exceptions = new List<string>();
+            parameter.Path_exchange_dir = @"C:\Users\AndreasHielscher\test";
             parameter.Directory_exceptions.Add("Benutzerdefinierte Office-Vorlagen");
             parameter.Directory_exceptions.Add("EON");
             parameter.Begin_sync_from = new DateTime(2018, 7, 10, 0, 0, 0);
