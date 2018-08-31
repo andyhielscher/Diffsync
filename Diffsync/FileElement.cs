@@ -4,6 +4,7 @@ using System.IO;
 
 namespace FileElementNamespace
 {
+    [Serializable]
     public class FileElement
     {
         string _path;
@@ -16,46 +17,6 @@ namespace FileElementNamespace
             get
             {
                 return (this._path);
-            }
-        }
-        public string Path_to_print {
-            get
-            {
-                const int num_letters = 80;
-                if (this._path.Length < num_letters)
-                {
-                    return (String.Format("{0,-" + num_letters + "}", this._path));
-                } else
-                {
-                    string[] parts = this._path.Split('\\');
-                    string path_shortend = "";
-                    int path_shortend_length;
-
-                    path_shortend_length = parts[parts.Length - 1].Length;
-                    if (path_shortend_length < num_letters)
-                    {
-                        int i = 0;
-                        do
-                        {
-                            if (parts[i].Length < num_letters - path_shortend_length - 4)
-                            {
-                                path_shortend = String.Format("{0}{1}\\", path_shortend, parts[i]);
-                                path_shortend_length += parts[i].Length + 1;
-                            }
-                            else
-                            {
-                                path_shortend = String.Format("{0}{1}...\\", path_shortend, parts[i].Substring(0, num_letters - path_shortend_length - 4));
-                                break;
-                            }
-                            i++;
-                        } while (i < parts.Length-1);
-                        path_shortend = String.Format("{0}{1}", path_shortend, parts[parts.Length - 1]);
-                    } else
-                    {
-                        path_shortend = String.Format("{0}...{1}", parts[parts.Length - 1].Substring(0, num_letters / 2 - 2), parts[parts.Length - 1].Substring(path_shortend_length - num_letters / 2 + 1));
-                    }
-                    return (path_shortend);
-                }
             }
         }
         public double Size {
@@ -96,6 +57,46 @@ namespace FileElementNamespace
             this._date_written = file_info.LastWriteTime;
             this.Will_be_copied = false;
 
+        }
+
+        public string PathToPrint(int num_letters)
+        {
+            if (this._path.Length < num_letters)
+            {
+                return (String.Format("{0,-" + num_letters + "}", this._path));
+            }
+            else
+            {
+                string[] parts = this._path.Split('\\');
+                string path_shortend = "";
+                int path_shortend_length;
+
+                path_shortend_length = parts[parts.Length - 1].Length;
+                if (path_shortend_length < num_letters)
+                {
+                    int i = 0;
+                    do
+                    {
+                        if (parts[i].Length < num_letters - path_shortend_length - 4)
+                        {
+                            path_shortend = String.Format("{0}{1}\\", path_shortend, parts[i]);
+                            path_shortend_length += parts[i].Length + 1;
+                        }
+                        else
+                        {
+                            path_shortend = String.Format("{0}{1}...\\", path_shortend, parts[i].Substring(0, num_letters - path_shortend_length - 4));
+                            break;
+                        }
+                        i++;
+                    } while (i < parts.Length - 1);
+                    path_shortend = String.Format("{0}{1}", path_shortend, parts[parts.Length - 1]);
+                }
+                else
+                {
+                    path_shortend = String.Format("{0}...{1}", parts[parts.Length - 1].Substring(0, num_letters / 2 - 2), parts[parts.Length - 1].Substring(path_shortend_length - num_letters / 2 + 1));
+                }
+                return (path_shortend);
+            }
         }
 
         public bool IsNewOrChanged(DateTime new_datetime)

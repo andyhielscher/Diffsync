@@ -8,6 +8,7 @@ using FileElementNamespace;
 
 namespace ParameterNamespace
 {
+    [Serializable]
     public class Parameter
     {
         string _path_complete_dir;
@@ -38,12 +39,15 @@ namespace ParameterNamespace
             }
         }
         public List<string> Directory_exceptions { get; set; }
+        public List<string> File_extension_exceptions { get; set; }
         public DateTime Begin_sync_from { get; set; }
         public string Project_name { get; set; }
 
         public Parameter()
         {
             Directory_exceptions = new List<string>();
+            File_extension_exceptions = new List<string>();
+            File_extension_exceptions.Add("dsdel"); // Dateiendung für Löschen von Dateien mit diesem Programm (DiffSync DELete)
         }
 
         public void GetAllFiles()
@@ -89,7 +93,7 @@ namespace ParameterNamespace
                     file = new FileInfo(new_path);
                     DirectoryCheckExistsAndCreate(file.DirectoryName);
                     file = new FileInfo(file_element.Path);
-                    file.CopyTo(new_path);
+                    file.CopyTo(new_path, true);
                 }
             }
         }
@@ -112,6 +116,7 @@ namespace ParameterNamespace
 
         void GetDirectoryFiles(string directory)
         {
+            // To-Do Filter für verschiedene Dateiendungen einbauen
             string[] files = Directory.GetFiles(directory);
 
             SortStringsAscending(files);
