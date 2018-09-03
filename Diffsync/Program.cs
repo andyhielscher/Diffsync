@@ -26,6 +26,16 @@ namespace Diffsync
             parameter.Begin_sync_from = new DateTime(2018, 8, 20, 0, 0, 0);
             parameter.Project_name = "Sync Andis PC";
 
+            // Filehook überprüfen; falls Datei mit Namen == Project_name existiert, kann nicht nochmal kopiert werden
+            if (FileHookExists(ref parameter))
+            {
+                // Programm wurde schon ausgeführt und kann nicht noch einmal gestartet werden
+                Console.WriteLine("Das Programm wurde bereits ausgeführt. Es muss auf die Ausführung der anderen Seite gewartet werden, bis das Programm erneut ausgeführt werden kann.");
+                Console.WriteLine("Zum Beenden beliebige Taste drücken.");
+                Console.ReadLine();
+                Environment.Exit(0);
+            }
+
             // Verzeichnis einlesen
             parameter.GetAllFiles();
 
@@ -46,6 +56,9 @@ namespace Diffsync
 
             // Datenbank speichern
             BinarySerialization.WriteToBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.Project_name), parameter); // Extension = DiffSync DataBase
+
+            // Filehook setzen
+            parameter.SetFileHook();
 
             // Datenbank laden (zum Test)
             Parameter parameter_2 = BinarySerialization.ReadFromBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.Project_name)); // Extension = DiffSync DataBase
@@ -91,6 +104,17 @@ namespace Diffsync
             {
                 return (false);
             }
+        }
+
+        static bool FileHookExists(ref Parameter parameter)
+        {
+            string new_path;
+            FileInfo file;
+
+            new_path = parameter.FileHook();
+            file = new FileInfo(new_path);
+
+            return file.Exists;
         }
     }
 

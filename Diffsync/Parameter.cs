@@ -103,9 +103,14 @@ namespace ParameterNamespace
             string new_path;
             FileInfo file;
 
-            new_path = String.Format("{0}{1}.dshook", _path_exchange_dir, Project_name); // DiffSyncHook
+            new_path = FileHook();
             file = new FileInfo(new_path);
             file.Create();
+        }
+
+        public string FileHook()
+        {
+            return String.Format("{0}{1}.dshook", _path_exchange_dir, Project_name); // DiffSyncHook
         }
 
         void GetSubDirectoryFiles(string directory)
