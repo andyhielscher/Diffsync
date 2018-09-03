@@ -98,6 +98,16 @@ namespace ParameterNamespace
             }
         }
 
+        public void SetFileHook()
+        {
+            string new_path;
+            FileInfo file;
+
+            new_path = String.Format("{0}{1}.dshook", _path_exchange_dir, Project_name); // DiffSyncHook
+            file = new FileInfo(new_path);
+            file.Create();
+        }
+
         void GetSubDirectoryFiles(string directory)
         {
             string[] sub_directories = Directory.GetDirectories(directory);
