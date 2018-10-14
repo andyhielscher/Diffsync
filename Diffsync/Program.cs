@@ -17,6 +17,7 @@ namespace Diffsync
 
             // Console: Breite einstellen
             Console.WindowWidth = 140;
+            // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
             // Arbeitsvariablen (aktuell hardgecodet):
             parameter.Path_complete_dir = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\";
@@ -34,6 +35,10 @@ namespace Diffsync
                 Console.WriteLine("Zum Beenden beliebige Taste drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
+            } else
+            {
+                // Programm wurde auf der Gegenseite schon ausgeführt, der FileHook des anderen Projekts wird gelöscht
+                DeleteOtherFileHook(ref parameter);
             }
 
             // Verzeichnis einlesen
@@ -58,7 +63,7 @@ namespace Diffsync
             BinarySerialization.WriteToBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.Project_name), parameter); // Extension = DiffSync DataBase
 
             // Filehook setzen
-            parameter.SetFileHook();
+            SetFileHook(ref parameter);
 
             // Datenbank laden (zum Test)
             Parameter parameter_2 = BinarySerialization.ReadFromBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.Project_name)); // Extension = DiffSync DataBase
@@ -115,6 +120,35 @@ namespace Diffsync
             file = new FileInfo(new_path);
 
             return file.Exists;
+        }
+
+        static void SetFileHook(ref Parameter parameter)
+        {
+            string new_path;
+            FileInfo file;
+
+            new_path = parameter.FileHook();
+            file = new FileInfo(new_path);
+            file.Create();
+        }
+
+        static void DeleteOtherFileHook(ref Parameter parameter)
+        {
+            string[] all_files;
+            all_files = Directory.GetFiles(parameter.Path_exchange_dir, "*.dshook");
+
+            foreach (string file_element in all_files)
+            {
+                try
+                {
+                    File.Delete(file_element);
+                }
+                catch (IOException delete_error)
+                {
+                    Console.WriteLine("Die Datei {} kann nicht gelöscht werden. Bitte manuell löschen", file_element);
+                    Console.WriteLine(delete_error.Message);
+                }
+            }
         }
     }
 
