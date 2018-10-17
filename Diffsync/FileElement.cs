@@ -11,12 +11,20 @@ namespace FileElementNamespace
         double _size; // in Byte
         DateTime _date_created;
         DateTime _date_written;
+        int _root_directory_path_length;
 
         public string Path
         {
             get
             {
                 return (this._path);
+            }
+        }
+        public string Relative_path
+        {
+            get
+            {
+                return (_path.Substring(_root_directory_path_length));
             }
         }
         public double Size {
@@ -43,11 +51,7 @@ namespace FileElementNamespace
         public bool Will_be_copied { get; set; }
         //public bool Conflict { get; set; }
 
-        public FileElement()
-        {
-        }
-
-        public FileElement(string path)
+        public FileElement(string path, int root_directory_path_length)
         {
             this._path = path;
             FileInfo file_info = new FileInfo(path);
@@ -55,6 +59,7 @@ namespace FileElementNamespace
             //this.DateAccessed = file_info.LastAccessTime;
             this._date_created = file_info.CreationTime;
             this._date_written = file_info.LastWriteTime;
+            this._root_directory_path_length = root_directory_path_length;
             this.Will_be_copied = false;
 
         }
