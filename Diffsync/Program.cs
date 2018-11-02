@@ -60,6 +60,9 @@ namespace Diffsync
             parameter.PrepareSaveToDatabase();
             BinarySerialization.WriteToBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.ProjectName), parameter); // Extension = DiffSync DataBase
 
+            // leere Ordner im Austausch-Verzeichnis löschen
+            parameter.DeleteEmptyExchangeDirectories();
+
             // Filehook setzen
             parameter.SetFileHook();
 
@@ -159,8 +162,8 @@ namespace Diffsync
                         // "Markierung" im Austausch-Verzeichnis löschen und im vollständigen Verzeichnis richtige Datei löschen
                         destination_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
                         source_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath);
-                        TryToDelete(source_path);
-                        TryToDelete(destination_path.Substring(0, destination_path.Length - 6)); // Endung ".dsdel" wird abgeschnitten
+                        TryToDeleteFile(source_path);
+                        TryToDeleteFile(destination_path.Substring(0, destination_path.Length - 6)); // Endung ".dsdel" wird abgeschnitten
                     }
                 }
             }
@@ -173,7 +176,7 @@ namespace Diffsync
             }
         }
 
-        static void TryToDelete(string path)
+        static void TryToDeleteFile(string path)
         {
             FileInfo file = new FileInfo(path);
             try {

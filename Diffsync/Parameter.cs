@@ -196,6 +196,24 @@ namespace ParameterNamespace
             file.Create();
         }
 
+        public void DeleteEmptyExchangeDirectories()
+        {
+            DeleteEmptySubDirectories(_path_exchange_dir);
+        }
+
+        void DeleteEmptySubDirectories(string directory)
+        {
+            string[] sub_directories = Directory.GetDirectories(directory);
+
+            foreach (string sub_directory in sub_directories) {
+                DeleteEmptySubDirectories(sub_directory);
+            }
+
+            if (!Directory.EnumerateFileSystemEntries(directory).Any()) {
+                Directory.Delete(directory);
+            }
+        }
+
         void SortStringsAscending(string[] strings_to_be_sorted)
         {
             Array.Sort(strings_to_be_sorted, (x, y) => String.Compare(x, y));
