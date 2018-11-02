@@ -48,8 +48,10 @@ namespace Diffsync
             // Dateien ausgeben, welche kopiert werden
             PrintFilesToSync(ref files_to_copy, parameter.PathCompleteDir, parameter.PathExchangeDir);
 
-            // Auf Bestätigung des Users zum weiteren Programmablauf warten
-            if (UserWantsToContinue() == false) {
+            // Auf Bestätigung des Users zum weiteren Programmablauf wartenConsole.WriteLine();
+            Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
+            Console.WriteLine("(HINWEIS: Bei Konflikten wird stets auf den User-Input gewartet)");
+            if (UserInputIsYes() == false) {
                 Environment.Exit(0);
             }
 
@@ -101,14 +103,11 @@ namespace Diffsync
             }
         }
 
-        static bool UserWantsToContinue()
+        static bool UserInputIsYes()
         {
             bool false_input;
             string input;
             do {
-                Console.WriteLine();
-                Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
-                Console.WriteLine("(HINWEIS: Bei Konflikten wird stets auf den User-Input gewartet)");
                 input = Console.ReadLine();
                 if (input == "j" || input == "n") {
                     false_input = false;
@@ -150,7 +149,34 @@ namespace Diffsync
                     } else {
                         // aus Austausch-Verzeichnis in vollständiges Verzeichnis verschieben
                         // Hinweis: Es kann ein Konflikt entstehen, wenn Datei im vollständigen Verzeichnis neuer ist. In diesem Fall wird eine Abfrage an den Benutzer gestellt.
-                        file.MoveTo(destination_path);
+                        FileInfo file_dest = new FileInfo(destination_path);
+                        if (file_dest.Exists) {
+                            // die Datei existiert bereits im vollständigen Verzeichnis, auf Konflikt prüfen
+                            if (file_dest.CreationTime > file_element.DateCreated || file_dest.LastWriteTime > file_element.DateWritten) {
+                                // Konflikt
+                                Console.WriteLine("KONFLIKT: Datei {0} ist neuer als im Austausch-Verzeichnis", destination_path);
+                                Console.WriteLine("    Datei in \\\\FULL\\: {0} | {1} | {2,7:##0.000} MB", 
+                                    file_dest.CreationTime.ToString("yyyy-MM-dd HH:mm"),
+                                    file_dest.LastWriteTime.ToString("yyyy-MM-dd HH:mm"),
+                                    file_dest.Length / 1024 / 1024);
+                                Console.WriteLine("    Datei in \\\\EXCH\\: {0} | {1} | {2,7:##0.000} MB",
+                                    file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
+                                    file_element.DateWritten.ToString("yyyy-MM-dd HH:mm"),
+                                    file_element.Size / 1024 / 1024);
+                                Console.WriteLine("    Soll die Datei im vollständigen Verzeichnis überschrieben werden (j/n)?");
+                                if (UserInputIsYes()) {
+                                    file_dest.Delete();
+                                    file.MoveTo(destination_path);
+                                } else {
+                                    TryToDeleteFile(source_path);
+                                }
+                            } else {
+                                file_dest.Delete();
+                                file.MoveTo(destination_path);
+                            }
+                        } else {
+                            file.MoveTo(destination_path);
+                        }
                     }
                 } else {
                     // dieser Block kann nur mit Vergleich der Datenbank erreicht werden
