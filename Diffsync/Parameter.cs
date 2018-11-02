@@ -77,9 +77,7 @@ namespace ParameterNamespace
 
             // alle Dateien des Austausch-Verzeichnisses einlesen, falls das Austausch-Verzeichnis bereits existiert
             _all_files_exchange_dir.Clear();
-            if (Directory.Exists(_path_complete_dir) == true) {
-                GetSubDirectoryFiles(_path_exchange_dir, ref _all_files_exchange_dir, _path_exchange_dir.Length, false);
-            }
+            GetSubDirectoryFiles(_path_exchange_dir, ref _all_files_exchange_dir, _path_exchange_dir.Length, false);
         }
 
         void GetSubDirectoryFiles(string directory, ref List<FileElement> file_elements, int root_directory_path_length, bool complete_dir)

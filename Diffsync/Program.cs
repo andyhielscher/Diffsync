@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using FileElementNamespace;
 using ParameterNamespace;
 using System.IO;
+using CommandLine;
 
 namespace Diffsync
 {
@@ -16,6 +14,18 @@ namespace Diffsync
             // Console: Breite und gespeicherte Anzahl Zeilen einstellen
             Console.WindowWidth = 180;
             Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
+
+            // Argumente verarbeiten
+            Parser.Default.ParseArguments<Options>(args)
+                   .WithParsed<Options>(o => {
+                       if (o.Verbose) {
+                           Console.WriteLine($"Verbose output enabled. Current Arguments: -v {o.Verbose}");
+                           Console.WriteLine("Quick Start Example! App is in Verbose mode!");
+                       } else {
+                           Console.WriteLine($"Current Arguments: -v {o.Verbose}");
+                           Console.WriteLine("Quick Start Example!");
+                       }
+                   });
 
             // initialisieren
             Parameter parameter = new Parameter(@"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\", @"C:\Users\AndreasHielscher\test", new DateTime(2018, 8, 20, 0, 0, 0), "Sync Andis PC");
@@ -231,5 +241,11 @@ namespace Diffsync
                 return (T)binaryFormatter.Deserialize(stream);
             }
         }
+    }
+
+    public class Options
+    {
+        [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages.")]
+        public bool Verbose { get; set; }
     }
 }
