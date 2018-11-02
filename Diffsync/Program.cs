@@ -13,20 +13,15 @@ namespace Diffsync
     {
         static void Main(string[] args)
         {
-            Parameter parameter = new Parameter();
-
             // Console: Breite und gespeicherte Anzahl Zeilen einstellen
             Console.WindowWidth = 180;
             Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
-            // Arbeitsvariablen (aktuell hardgecodet):
-            parameter.PathCompleteDir = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\"; // falls nicht vorhanden wird automatisch ein Backslash ans Ende gesetzt 
-            parameter.PathExchangeDir = @"C:\Users\AndreasHielscher\test"; // falls nicht vorhanden wird automatisch ein Backslash ans Ende gesetzt 
+            // initialisieren
+            Parameter parameter = new Parameter(@"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\", @"C:\Users\AndreasHielscher\test", new DateTime(2018, 8, 20, 0, 0, 0), "Sync Andis PC");
             parameter.DirectoryExceptions.Add("Benutzerdefinierte Office-Vorlagen"); // Groß-Kleinschreibung wird ignoriert, Backslash am Ende wird ignoriert
             parameter.DirectoryExceptions.Add("EON");
-            parameter.BeginSyncFrom = new DateTime(2018, 8, 20, 0, 0, 0);
-            parameter.ProjectName = "Sync Andis PC";
-
+            
             // Filehook überprüfen; falls Datei mit Namen == Project_name existiert, kann nicht nochmal kopiert werden
             if (parameter.FileHookExists()) {
                 // Programm wurde schon ausgeführt und kann nicht noch einmal gestartet werden
@@ -49,9 +44,12 @@ namespace Diffsync
             PrintFilesToSync(ref files_to_copy, parameter.PathCompleteDir, parameter.PathExchangeDir);
 
             // Auf Bestätigung des Users zum weiteren Programmablauf wartenConsole.WriteLine();
+            Console.WriteLine("");
             Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
             Console.WriteLine("(HINWEIS: Bei Konflikten wird stets auf den User-Input gewartet)");
             if (UserInputIsYes() == false) {
+                Console.WriteLine("Programm wird beendet. Bitte beliebige Taste drücken.");
+                Console.ReadLine();
                 Environment.Exit(0);
             }
 
@@ -99,7 +97,7 @@ namespace Diffsync
                 short_dir, file_element.RelativePathToPrint(112),
                 file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
                 file_element.DateWritten.ToString("yyyy-MM-dd HH:mm"),
-                file_element.Size / 1024 / 1024);
+                file_element.Size);
             }
         }
 
@@ -140,7 +138,7 @@ namespace Diffsync
                         source_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
                     }
 
-                    DirectoryCheckExistsAndCreate(file_element.DirectoryName);
+                    DirectoryCheckExistsAndCreate(new FileInfo(destination_path).DirectoryName);
                     file = new FileInfo(source_path);
 
                     if (file_element.FromCompleteDir == true) {
@@ -162,7 +160,7 @@ namespace Diffsync
                                 Console.WriteLine("    Datei in \\\\EXCH\\: {0} | {1} | {2,7:##0.000} MB",
                                     file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
                                     file_element.DateWritten.ToString("yyyy-MM-dd HH:mm"),
-                                    file_element.Size / 1024 / 1024);
+                                    file_element.Size);
                                 Console.WriteLine("    Soll die Datei im vollständigen Verzeichnis überschrieben werden (j/n)?");
                                 if (UserInputIsYes()) {
                                     file_dest.Delete();
@@ -193,6 +191,8 @@ namespace Diffsync
                     }
                 }
             }
+
+            Console.WriteLine("Kopiervorgang erfolgreich.");
         }
 
         static void DirectoryCheckExistsAndCreate(string directory)

@@ -8,7 +8,6 @@ namespace FileElementNamespace
     public class FileElement
     {
         string _path;
-        string _directory_name;
         double _size; // in Byte
         DateTime _date_created;
         DateTime _date_written;
@@ -28,12 +27,6 @@ namespace FileElementNamespace
             get {
                 // excklusive vorgestelltem "\"
                 return (_path.Substring(_root_directory_path_length));
-            }
-        }
-        public string DirectoryName
-        {
-            get {
-                return (_directory_name);
             }
         }
         public double Size
@@ -81,8 +74,7 @@ namespace FileElementNamespace
         {
             this._path = path;
             FileInfo file_info = new FileInfo(path);
-            this._directory_name = file_info.DirectoryName;
-            this._size = file_info.Length;
+            this._size = (double)file_info.Length / 1024 / 1024; // in MB
             //this.DateAccessed = file_info.LastAccessTime;
             this._date_created = file_info.CreationTime;
             this._date_written = file_info.LastWriteTime;

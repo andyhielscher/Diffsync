@@ -13,8 +13,10 @@ namespace ParameterNamespace
     {
         string _path_complete_dir;
         string _path_exchange_dir;
+        string _project_name;
         string _file_hook;
-        List<FileElement> _all_files_complete_dir;
+        DateTime _begin_from_sync;
+        List<FileElement> _all_files_complete_dir = new List<FileElement>();
         List<FileElement> _all_files_exchange_dir = new List<FileElement>();
         List<FileElement> _all_files_database = new List<FileElement>();
 
@@ -23,45 +25,58 @@ namespace ParameterNamespace
             get {
                 return _path_complete_dir;
             }
-            set {
-                _path_complete_dir = AddBackslash(value);
-            }
         }
         public string PathExchangeDir
         {
             get {
                 return _path_exchange_dir;
             }
-            set {
-                _path_exchange_dir = AddBackslash(value);
-            }
         }
         public List<string> DirectoryExceptions { get; set; }
         public List<string> FileExtensionExceptions { get; set; }
-        public DateTime BeginSyncFrom { get; set; }
-        public string ProjectName { get; set; }
-
-
-        public Parameter()
+        public DateTime BeginSyncFrom
         {
+            get {
+                return _begin_from_sync;
+            }
+        }
+        public string ProjectName {
+            get {
+                return _project_name;
+            }
+        }
+
+
+        public Parameter(string path_complete_dir, string path_exchange_dir, DateTime begin_sync_from, string project_name)
+        {
+            this._path_complete_dir = AddBackslash(path_complete_dir);
+            if (Directory.Exists(_path_complete_dir) == false) {
+                Console.Error.WriteLine("Hauptverzeichnis {0} nicht gefunden!", _path_complete_dir);
+                Console.WriteLine("Programm wird beendet. Bitte beliebige Taste drücken.");
+                Console.ReadLine();
+                Environment.Exit(0);
+            }
+            this._path_exchange_dir = AddBackslash(path_exchange_dir);
+            if (Directory.Exists(_path_exchange_dir) == false) {
+                Directory.CreateDirectory(_path_exchange_dir);
+            }
+            this._begin_from_sync = begin_sync_from;
+            this._project_name = project_name;
+
             DirectoryExceptions = new List<string>();
             FileExtensionExceptions = new List<string>();
             //File_extension_exceptions.Add("dsdel"); // Dateiendung für Löschen von Dateien mit diesem Programm (DiffSync DELete)
-            this._file_hook = String.Format("{0}{1}.dshook", _path_exchange_dir, ProjectName); // DiffSyncHook
+            this._file_hook = String.Format("{0}{1}.dshook", _path_exchange_dir, _project_name); // DiffSyncHook
         }
 
         public void GetAllFiles()
         {
             // alle Dateien des vollständigen Verzeichnisses einlesen
-            _all_files_complete_dir = new List<FileElement>();
-            if (Directory.Exists(_path_complete_dir) == false) {
-                Console.Error.WriteLine("Hauptverzeichnis {0} nicht gefunden!", _path_complete_dir);
-                return;
-            }
+            _all_files_complete_dir.Clear();
             GetSubDirectoryFiles(_path_complete_dir, ref _all_files_complete_dir, _path_complete_dir.Length, true);
 
             // alle Dateien des Austausch-Verzeichnisses einlesen, falls das Austausch-Verzeichnis bereits existiert
-            _all_files_exchange_dir = new List<FileElement>();
+            _all_files_exchange_dir.Clear();
             if (Directory.Exists(_path_complete_dir) == true) {
                 GetSubDirectoryFiles(_path_exchange_dir, ref _all_files_exchange_dir, _path_exchange_dir.Length, false);
             }
