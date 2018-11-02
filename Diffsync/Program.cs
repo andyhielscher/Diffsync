@@ -15,110 +15,86 @@ namespace Diffsync
         {
             Parameter parameter = new Parameter();
 
-            // Console: Breite einstellen
-            Console.WindowWidth = 140;
-            // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
+            // Console: Breite und gespeicherte Anzahl Zeilen einstellen
+            Console.WindowWidth = 180;
+            Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
             // Arbeitsvariablen (aktuell hardgecodet):
-            parameter.Path_complete_dir = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\";
-            parameter.Path_exchange_dir = @"C:\Users\AndreasHielscher\test";
-            parameter.Directory_exceptions.Add("Benutzerdefinierte Office-Vorlagen");
-            parameter.Directory_exceptions.Add("EON");
-            parameter.Begin_sync_from = new DateTime(2018, 8, 20, 0, 0, 0);
-            parameter.Project_name = "Sync Andis PC";
+            parameter.PathCompleteDir = @"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\"; // falls nicht vorhanden wird automatisch ein Backslash ans Ende gesetzt 
+            parameter.PathExchangeDir = @"C:\Users\AndreasHielscher\test"; // falls nicht vorhanden wird automatisch ein Backslash ans Ende gesetzt 
+            parameter.DirectoryExceptions.Add("Benutzerdefinierte Office-Vorlagen"); // Groß-Kleinschreibung wird ignoriert, Backslash am Ende wird ignoriert
+            parameter.DirectoryExceptions.Add("EON");
+            parameter.BeginSyncFrom = new DateTime(2018, 8, 20, 0, 0, 0);
+            parameter.ProjectName = "Sync Andis PC";
 
             // Filehook überprüfen; falls Datei mit Namen == Project_name existiert, kann nicht nochmal kopiert werden
-            if (FileHookExists(ref parameter))
-            {
+            if (parameter.FileHookExists()) {
                 // Programm wurde schon ausgeführt und kann nicht noch einmal gestartet werden
                 Console.WriteLine("Das Programm wurde bereits ausgeführt. Es muss auf die Ausführung der anderen Seite gewartet werden, bis das Programm erneut ausgeführt werden kann.");
                 Console.WriteLine("Zum Beenden beliebige Taste drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
-            } else
-            {
+            } else {
                 // Programm wurde auf der Gegenseite schon ausgeführt, der FileHook des anderen Projekts wird gelöscht
-                DeleteOtherFileHook(ref parameter);
+                parameter.DeleteOtherFileHook();
             }
 
-            // Verzeichnis einlesen
+            // Verzeichnisse einlesen
             parameter.GetAllFiles();
 
-            // Synchronisierung wird fallweise anders durchgeführt
-            if (parameter.Is_database_used_to_sync)
-            {
-                // to do
-            } else
-            {
-                // Dateien auflisten, welche kopiert werden sollen
-                List<FileElement> files_to_copy = parameter.GetFilesToCopyToExchangeDir();
+            // Dateien auflisten, welche kopiert werden sollen (enthält Dateien aus complete_dir und exchange_dir)
+            List<FileElement> files_to_copy = parameter.GetFilesToSync();
 
-                // Dateien ausgeben, welche kopiert werden
-                PrintFilesToCopy(ref files_to_copy);
+            // Dateien ausgeben, welche kopiert werden
+            PrintFilesToSync(ref files_to_copy, parameter.PathCompleteDir, parameter.PathExchangeDir);
 
-                // Auf Bestätigung des Users zum weiteren Programmablauf warten
-                if (UserWantsToContinue() == false)
-                {
-                    Environment.Exit(0);
-                }
-
-                // Alle zu kopierenden Dateien kopieren
-                CopyFiles(ref files_to_copy, parameter.Path_exchange_dir, parameter.Path_complete_dir);
+            // Auf Bestätigung des Users zum weiteren Programmablauf warten
+            if (UserWantsToContinue() == false) {
+                Environment.Exit(0);
             }
+
+            // Alle zu kopierenden und zu löschenden Dateien synchronisieren
+            SyncFiles(ref files_to_copy, parameter.PathCompleteDir, parameter.PathExchangeDir);
 
             // Datenbank speichern
             parameter.PrepareSaveToDatabase();
-            BinarySerialization.WriteToBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.Project_name), parameter); // Extension = DiffSync DataBase
+            BinarySerialization.WriteToBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.ProjectName), parameter); // Extension = DiffSync DataBase
 
             // Filehook setzen
-            SetFileHook(ref parameter);
+            parameter.SetFileHook();
 
             // Datenbank laden (zum Test)
-            Parameter parameter_2 = BinarySerialization.ReadFromBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.Project_name)); // Extension = DiffSync DataBase
+            Parameter parameter_2 = BinarySerialization.ReadFromBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.ProjectName)); // Extension = DiffSync DataBase
         }
 
-        static bool FileHookExists(ref Parameter parameter)
+        static void PrintFilesToSync(ref List<FileElement> files, string complete_dir, string exchange_dir)
         {
-            string new_path;
-            FileInfo file;
-
-            new_path = parameter.FileHook();
-            file = new FileInfo(new_path);
-
-            return file.Exists;
-        }
-
-        static void DeleteOtherFileHook(ref Parameter parameter)
-        {
-            string[] all_files;
-            all_files = Directory.GetFiles(parameter.Path_exchange_dir, "*.dshook");
-
-            foreach (string file_element in all_files)
-            {
-                try
-                {
-                    File.Delete(file_element);
+            Console.WriteLine("Übersicht der beiden Verzeichnisse zur Synchronisierung:");
+            Console.WriteLine("vollständiges Verzeichnis (\\\\FULL\\): {0}", complete_dir);
+            Console.WriteLine("Austausch-Verzeichnis     (\\\\EXCH\\): {0}", exchange_dir);
+            Console.WriteLine("");
+            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt und überschrieben (+) oder gelöscht (-) werden:");
+            Console.WriteLine("Aktion | Dateipfad                                                                                                               | Erstelldatum     | Schreibdatum     | Größe");
+            Console.WriteLine("-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            foreach (FileElement file_element in files) {
+                string action;
+                string short_dir;
+                if (file_element.WillBeDeleted == true) {
+                    action = "-";
+                } else {
+                    action = "+";
                 }
-                catch (IOException delete_error)
-                {
-                    Console.WriteLine("Die Datei {} kann nicht gelöscht werden. Bitte manuell löschen", file_element);
-                    Console.WriteLine(delete_error.Message);
+                if (file_element.FromCompleteDir == true) {
+                    short_dir = "\\\\FULL\\";
+                } else {
+                    short_dir = "\\\\EXCH\\";
                 }
-            }
-        }
-
-        static void PrintFilesToCopy(ref List<FileElement> files)
-        {
-            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die kopiert werden:");
-            Console.WriteLine("Dateipfad                                                                        | Erstelldatum     | Schreibdatum     | Größe");
-            Console.WriteLine("-----------------------------------------------------------------------------------------------------------------------------------");
-            foreach (FileElement file_element in files)
-            {
-                Console.WriteLine("{0} | {1} | {2} | {3,7:##0.000} MB",
-                    file_element.PathToPrint(80),
-                    file_element.Date_created.ToString("yyyy-MM-dd HH:mm"),
-                    file_element.Date_written.ToString("yyyy-MM-dd HH:mm"),
-                    file_element.Size / 1024 / 1024);
+                Console.WriteLine("     {0} | {1}{2} | {3} | {4} | {5,7:##0.000} MB",
+                action,
+                short_dir, file_element.RelativePathToPrint(112),
+                file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
+                file_element.DateWritten.ToString("yyyy-MM-dd HH:mm"),
+                file_element.Size / 1024 / 1024);
             }
         }
 
@@ -126,64 +102,86 @@ namespace Diffsync
         {
             bool false_input;
             string input;
-            do
-            {
+            do {
                 Console.WriteLine();
                 Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
+                Console.WriteLine("(HINWEIS: Bei Konflikten wird stets auf den User-Input gewartet)");
                 input = Console.ReadLine();
-                if (input == "j" || input == "n")
-                {
+                if (input == "j" || input == "n") {
                     false_input = false;
-                }
-                else
-                {
+                } else {
                     false_input = true;
                 }
             } while (false_input);
-            if (input == "j")
-            {
+            if (input == "j") {
                 return (true);
-            } else
-            {
+            } else {
                 return (false);
             }
         }
- 
-        static void CopyFiles(ref List<FileElement> files_to_copy, string destination_dir, string source_dir)
+
+        static void SyncFiles(ref List<FileElement> files_to_sync, string complete_dir, string exchange_dir)
         {
             string destination_path,
                 source_path;
             FileInfo file;
 
-            DirectoryCheckExistsAndCreate(destination_dir);
+            DirectoryCheckExistsAndCreate(exchange_dir);
 
-            foreach (FileElement file_element in files_to_copy)
-            {
-                destination_path = String.Format("{0}{1}", destination_dir, file_element.Relative_path);
-                source_path = String.Format("{0}{1}", source_dir, file_element.Relative_path);
-                file = new FileInfo(destination_path);
-                DirectoryCheckExistsAndCreate(file.DirectoryName);
-                file = new FileInfo(source_path);
-                file.CopyTo(destination_path, true);
+            foreach (FileElement file_element in files_to_sync) {
+                if (file_element.WillBeDeleted == false) {
+                    if (file_element.FromCompleteDir == true) {
+                        destination_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
+                        source_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath);
+                    } else {
+                        destination_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath);
+                        source_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
+                    }
+
+                    DirectoryCheckExistsAndCreate(file_element.DirectoryName);
+                    file = new FileInfo(source_path);
+
+                    if (file_element.FromCompleteDir == true) {
+                        // von vollständigem Verzeichnis in Austausch-Verzeichnis kopieren
+                        file.CopyTo(destination_path, true);
+                    } else {
+                        // aus Austausch-Verzeichnis in vollständiges Verzeichnis verschieben
+                        // Hinweis: Es kann ein Konflikt entstehen, wenn Datei im vollständigen Verzeichnis neuer ist. In diesem Fall wird eine Abfrage an den Benutzer gestellt.
+                        file.MoveTo(destination_path);
+                    }
+                } else {
+                    // dieser Block kann nur mit Vergleich der Datenbank erreicht werden
+                    if (file_element.FromCompleteDir == true) {
+                        // Datei ist im vollständigen Verzeichnis nicht mehr vorhanden, folglich im Austausch-Verzeichnis als zu löschen markieren
+                        file = new FileInfo(String.Format("{0}{1}.dsdel", exchange_dir, file_element.RelativePath));
+                        file.Create();
+                    } else {
+                        // "Markierung" im Austausch-Verzeichnis löschen und im vollständigen Verzeichnis richtige Datei löschen
+                        destination_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
+                        source_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath);
+                        TryToDelete(source_path);
+                        TryToDelete(destination_path.Substring(0, destination_path.Length - 6)); // Endung ".dsdel" wird abgeschnitten
+                    }
+                }
             }
         }
 
         static void DirectoryCheckExistsAndCreate(string directory)
         {
-            if (Directory.Exists(directory) == false)
-            {
+            if (Directory.Exists(directory) == false) {
                 Directory.CreateDirectory(directory);
             }
         }
 
-        static void SetFileHook(ref Parameter parameter)
+        static void TryToDelete(string path)
         {
-            string new_path;
-            FileInfo file;
-
-            new_path = parameter.FileHook();
-            file = new FileInfo(new_path);
-            file.Create();
+            FileInfo file = new FileInfo(path);
+            try {
+                file.Delete();
+            } catch (IOException delete_error) {
+                Console.WriteLine("Die Datei {} kann nicht gelöscht werden. Bitte manuell löschen", path);
+                Console.WriteLine(delete_error.Message);
+            }
         }
     }
 
@@ -191,8 +189,7 @@ namespace Diffsync
     {
         public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false)
         {
-            using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create))
-            {
+            using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create)) {
                 var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
                 binaryFormatter.Serialize(stream, objectToWrite);
             }
@@ -200,8 +197,7 @@ namespace Diffsync
 
         public static T ReadFromBinaryFile<T>(string filePath)
         {
-            using (Stream stream = File.Open(filePath, FileMode.Open))
-            {
+            using (Stream stream = File.Open(filePath, FileMode.Open)) {
                 var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
                 return (T)binaryFormatter.Deserialize(stream);
             }
