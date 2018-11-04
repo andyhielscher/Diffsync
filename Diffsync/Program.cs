@@ -9,6 +9,27 @@ namespace Diffsync
 {
     class Program
     {
+        class Options
+        {
+            [Option("DatabaseDirectory", Required = true, HelpText = "Pfad zum Verzeichnis der Datenbank. Falls Datenbank existiert, werden die anderen Angaben ignoriert und alle Eigenschaften aus der Datenbank eingelesen. Z.B. DatabaseDirectory=\"C:\\Users\\Name\\Documents\\Diffsync\\Sync Projekt xy.dsdb\"")]
+            public string DatabaseDirectory { get; set; }
+
+            [Option("CompleteDirectory", Required = false, HelpText = "Pfad zum vollständigen Verzeichnis, welches synchronisiert werden soll. Z.B. CompleteDirectory=\"C:\\Users\\Name\\Documents\\vollständiges Verzeichnis\". Hinweis: Verzeichnis darf NICHT mit \"\\\" enden!")]
+            public string CompleteDirectory { get; set; }
+
+            [Option("ExchangeDirectory", Required = false, HelpText = "Pfad zum Austausch-Verzeichnis, welches die Änderungen des anderen PCs enthält. Z.B. ExchangeDirectory=\"C:\\Users\\Name\\Documents\\Austausch-Verzeichnis\". Hinweis: Verzeichnis darf NICHT mit \"\\\" enden!")]
+            public string ExchangeDirectory { get; set; }
+
+            [Option("DirectoryExceptions", Separator = ';', Required = false, HelpText = "Auflistung von (verschachtelten) Verzeichnissen, welche nicht synchronisiert werden sollen. Z.B. DirectoryExceptions=\"\\Erstes Verzeichnis\";\\Test\\Test\". Trennzeichen: \";\"")]
+            public IEnumerable<string> DirectoryExceptions { get; set; }
+
+            [Option("FileExtensionExceptions", Separator = ';', Required = false, HelpText = "Auflistung von Dateiendungen, welche nicht synchronisiert werden sollen. Z.B. FileExtensionExceptions=\".exe\". Trennzeichen: \";\" Noch nicht unterstützt!")]
+            public IEnumerable<string> FileExtensionExceptions { get; set; }
+            
+            [Option("DateSync", Required = false, HelpText = "Einmalige Eingabe. Gibt den Startzeitpunkt der ersten Synchronsierung an. Z.B. DateSync=\"YYYY-MM-TT hh:mm\"")]
+            public string DateSync { get; set; }
+
+        }
         static void Main(string[] args)
         {
             // Console: Breite und gespeicherte Anzahl Zeilen einstellen
@@ -16,27 +37,51 @@ namespace Diffsync
             Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
             // Argumente verarbeiten
-            Parser.Default.ParseArguments<Options>(args)
-                   .WithParsed<Options>(o => {
-                       if (o.Verbose) {
-                           Console.WriteLine($"Verbose output enabled. Current Arguments: -v {o.Verbose}");
-                           Console.WriteLine("Quick Start Example! App is in Verbose mode!");
-                       } else {
-                           Console.WriteLine($"Current Arguments: -v {o.Verbose}");
-                           Console.WriteLine("Quick Start Example!");
-                       }
-                   });
+            string database_directory;
+            string complete_directory;
+            string exchange_directory;
+            List<string> directory_exceptions = new List<string>();
+            List<string> file_extension_exceptions = new List<string>();
+            DateTime date_sync;
+            var result = Parser.Default.ParseArguments<Options>(args)
+                .WithParsed<Options>(options => {
+                    database_directory = options.DatabaseDirectory;
+                    complete_directory = options.CompleteDirectory;
+                    exchange_directory = options.ExchangeDirectory;
+                    foreach (string directory_exception in options.DirectoryExceptions) {
+                        directory_exceptions.Add(directory_exception);
+                    }
+                    foreach (string file_extension_exception in options.FileExtensionExceptions) {
+                        file_extension_exceptions.Add(file_extension_exception);
+                    }
+                    if (options.DateSync != null) {
+                        date_sync = new DateTime(Convert.ToInt32(options.DateSync.Substring(0, 4)),
+                            Convert.ToInt32(options.DateSync.Substring(5, 2)),
+                            Convert.ToInt32(options.DateSync.Substring(8, 2)),
+                            Convert.ToInt32(options.DateSync.Substring(11, 2)),
+                            Convert.ToInt32(options.DateSync.Substring(14, 2)),
+                            0);
+                    }
+                });
+            // wurden Argumente korrekt verarbeitet?
+            if (result.Tag == ParserResultType.NotParsed) {
+                // Fehler bzw. der Block wird auch erreicht bei Eingabe von "--help" oder "--version"
+                Console.WriteLine("Zum Beenden Enter drücken.");
+                Console.ReadLine();
+                Environment.Exit(0);
+            }
 
             // initialisieren
+            // TO-DO: Verzeichnis der Datenbank übergeben statt Projektname
             Parameter parameter = new Parameter(@"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\", @"C:\Users\AndreasHielscher\test", new DateTime(2018, 8, 20, 0, 0, 0), "Sync Andis PC");
-            parameter.DirectoryExceptions.Add("Benutzerdefinierte Office-Vorlagen"); // Groß-Kleinschreibung wird ignoriert, Backslash am Ende wird ignoriert
-            parameter.DirectoryExceptions.Add("EON");
+            parameter.DirectoryExceptions.Add("\\Benutzerdefinierte Office-Vorlagen"); // Groß-Kleinschreibung wird ignoriert, Backslash am Ende wird ignoriert
+            parameter.DirectoryExceptions.Add("\\EON");
             
             // Filehook überprüfen; falls Datei mit Namen == Project_name existiert, kann nicht nochmal kopiert werden
             if (parameter.FileHookExists()) {
                 // Programm wurde schon ausgeführt und kann nicht noch einmal gestartet werden
                 Console.WriteLine("Das Programm wurde bereits ausgeführt. Es muss auf die Ausführung der anderen Seite gewartet werden, bis das Programm erneut ausgeführt werden kann.");
-                Console.WriteLine("Zum Beenden beliebige Taste drücken.");
+                Console.WriteLine("Zum Beenden Enter drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
             } else {
@@ -58,7 +103,7 @@ namespace Diffsync
             Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
             Console.WriteLine("(HINWEIS: Bei Konflikten wird stets auf den User-Input gewartet)");
             if (UserInputIsYes() == false) {
-                Console.WriteLine("Programm wird beendet. Bitte beliebige Taste drücken.");
+                Console.WriteLine("Programm wird beendet. Bitte Enter drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
             }
@@ -224,7 +269,7 @@ namespace Diffsync
         }
     }
 
-    public static class BinarySerialization
+    static class BinarySerialization
     {
         public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false)
         {
@@ -241,11 +286,5 @@ namespace Diffsync
                 return (T)binaryFormatter.Deserialize(stream);
             }
         }
-    }
-
-    public class Options
-    {
-        [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages.")]
-        public bool Verbose { get; set; }
     }
 }
