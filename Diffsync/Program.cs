@@ -141,12 +141,12 @@ namespace Diffsync
             // Alle zu kopierenden und zu löschenden Dateien synchronisieren
             SyncFiles(ref files_to_copy, parameter.PathCompleteDir, parameter.PathExchangeDir);
 
+            // leere Ordner im Austausch-Verzeichnis löschen
+            parameter.DeleteEmptyExchangeDirectories();
+
             // Datenbank speichern
             parameter.PrepareSaveToDatabase();
             BinarySerialization.WriteToBinaryFile<Parameter>(parameter.DatabaseFile, parameter); // Extension = DiffSync DataBase
-
-            // leere Ordner im Austausch-Verzeichnis löschen
-            parameter.DeleteEmptyExchangeDirectories();
 
             // Filehook setzen
             parameter.SetFileHook();
@@ -238,6 +238,9 @@ namespace Diffsync
                         // Hinweis: Es kann ein Konflikt entstehen, wenn Datei im vollständigen Verzeichnis neuer ist. In diesem Fall wird eine Abfrage an den Benutzer gestellt.
                         FileInfo file_dest = new FileInfo(destination_path);
                         if (file_dest.Exists) {
+                            
+                            // TO-DO: DIESEN BLOCK PRÜFEN
+
                             // die Datei existiert bereits im vollständigen Verzeichnis, auf Konflikt prüfen
                             if (file_dest.CreationTime > file_element.DateCreated || file_dest.LastWriteTime > file_element.DateWritten) {
                                 // Konflikt
@@ -268,6 +271,9 @@ namespace Diffsync
                 } else {
                     if (file_element.FromCompleteDir == true) {
                         // Datei ist im vollständigen Verzeichnis nicht mehr vorhanden, folglich im Austausch-Verzeichnis als zu löschen markieren
+
+                        // TO-DO: DIESEN BLOCK PRÜFEN
+
                         file = new FileInfo(String.Format("{0}{1}.dsdel", exchange_dir, file_element.RelativePath));
                         file.Create();
                     } else {
