@@ -37,33 +37,53 @@ namespace Diffsync
             Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
             // Argumente verarbeiten
-            string database_directory;
-            string complete_directory;
-            string exchange_directory;
+            string database_file = null;
+            string complete_directory = null;
+            string exchange_directory = null;
             List<string> directory_exceptions = new List<string>();
             List<string> file_extension_exceptions = new List<string>();
-            DateTime date_sync;
+            DateTime date_sync = new DateTime(2000, 1, 1, 0, 0, 0);
+            bool error = false;
             var result = Parser.Default.ParseArguments<Options>(args)
                 .WithParsed<Options>(options => {
-                    database_directory = options.DatabaseDirectory;
+                    if (options.DatabaseDirectory.EndsWith(".dsdb") == false) {
+                        Console.WriteLine("Falsche Dateiendung der Datenbank. Datenbank muss auf \".dsdb\" enden.");
+                        error = true;
+                    }
+                    database_file = options.DatabaseDirectory;
                     complete_directory = options.CompleteDirectory;
                     exchange_directory = options.ExchangeDirectory;
                     foreach (string directory_exception in options.DirectoryExceptions) {
+                        if (directory_exception.StartsWith("\\") == false) {
+                            Console.WriteLine(String.Format("Fehler in DirectoryExceptions {0}. Beginnt nicht mit \"\\\".", directory_exception));
+                            error = true;
+                        }
                         directory_exceptions.Add(directory_exception);
                     }
                     foreach (string file_extension_exception in options.FileExtensionExceptions) {
                         file_extension_exceptions.Add(file_extension_exception);
                     }
                     if (options.DateSync != null) {
-                        date_sync = new DateTime(Convert.ToInt32(options.DateSync.Substring(0, 4)),
-                            Convert.ToInt32(options.DateSync.Substring(5, 2)),
-                            Convert.ToInt32(options.DateSync.Substring(8, 2)),
-                            Convert.ToInt32(options.DateSync.Substring(11, 2)),
-                            Convert.ToInt32(options.DateSync.Substring(14, 2)),
-                            0);
+                        try {
+                            date_sync = new DateTime(Convert.ToInt32(options.DateSync.Substring(0, 4)),
+                                Convert.ToInt32(options.DateSync.Substring(5, 2)),
+                                Convert.ToInt32(options.DateSync.Substring(8, 2)),
+                                Convert.ToInt32(options.DateSync.Substring(11, 2)),
+                                Convert.ToInt32(options.DateSync.Substring(14, 2)),
+                                0);
+                        } catch {
+                            Console.WriteLine("Fehler beim Verarbeiten des Datums. Datum muss vom Format \"YYYY-MM-TT hh:mm\" sein.");
+                            error = true;
+                        }
                     }
                 });
+
             // wurden Argumente korrekt verarbeitet?
+            if (error) {
+                Console.WriteLine("Zum Beenden Enter drücken.");
+                Console.ReadLine();
+                Environment.Exit(0);
+            }
             if (result.Tag == ParserResultType.NotParsed) {
                 // Fehler bzw. der Block wird auch erreicht bei Eingabe von "--help" oder "--version"
                 Console.WriteLine("Zum Beenden Enter drücken.");
@@ -72,10 +92,20 @@ namespace Diffsync
             }
 
             // initialisieren
-            // TO-DO: Verzeichnis der Datenbank übergeben statt Projektname
-            Parameter parameter = new Parameter(@"C:\Users\AndreasHielscher\OneDrive - SmartSim GmbH\Dokumente\", @"C:\Users\AndreasHielscher\test", new DateTime(2018, 8, 20, 0, 0, 0), "Sync Andis PC");
-            parameter.DirectoryExceptions.Add("\\Benutzerdefinierte Office-Vorlagen"); // Groß-Kleinschreibung wird ignoriert, Backslash am Ende wird ignoriert
-            parameter.DirectoryExceptions.Add("\\EON");
+            Parameter parameter;
+            FileInfo file = new FileInfo(database_file);
+            if (file.Exists) {
+                // Datenbank laden
+                parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(database_file); // Extension dsdb = DiffSync DataBase
+            } else {
+                parameter = new Parameter(database_file, complete_directory, exchange_directory, date_sync);
+                foreach (string directory_exception in directory_exceptions) {
+                    parameter.DirectoryExceptions.Add(directory_exception);
+                }
+                foreach (string file_extension_exception in file_extension_exceptions) {
+                    parameter.FileExtensionExceptions.Add(file_extension_exception);
+                }
+            }
             
             // Filehook überprüfen; falls Datei mit Namen == Project_name existiert, kann nicht nochmal kopiert werden
             if (parameter.FileHookExists()) {
@@ -113,7 +143,7 @@ namespace Diffsync
 
             // Datenbank speichern
             parameter.PrepareSaveToDatabase();
-            BinarySerialization.WriteToBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.ProjectName), parameter); // Extension = DiffSync DataBase
+            BinarySerialization.WriteToBinaryFile<Parameter>(parameter.DatabaseFile, parameter); // Extension = DiffSync DataBase
 
             // leere Ordner im Austausch-Verzeichnis löschen
             parameter.DeleteEmptyExchangeDirectories();
@@ -121,8 +151,12 @@ namespace Diffsync
             // Filehook setzen
             parameter.SetFileHook();
 
-            // Datenbank laden (zum Test)
-            Parameter parameter_2 = BinarySerialization.ReadFromBinaryFile<Parameter>(String.Format("{0}\\{1}.dsdb", Environment.CurrentDirectory, parameter.ProjectName)); // Extension = DiffSync DataBase
+            // Programm abgeschlossen, beenden
+            Console.WriteLine("");
+            Console.WriteLine("Synchronisierung erfolgreich abgeschlossen. Alle Änderungen wurden in der Datenbank aktualisiert.");
+            Console.WriteLine("Zum Beenden Enter drücken.");
+            Console.ReadLine();
+            Environment.Exit(0);
         }
 
         static void PrintFilesToSync(ref List<FileElement> files, string complete_dir, string exchange_dir)

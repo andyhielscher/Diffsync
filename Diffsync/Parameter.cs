@@ -13,7 +13,7 @@ namespace ParameterNamespace
     {
         string _path_complete_dir;
         string _path_exchange_dir;
-        string _project_name;
+        string _path_database_file;
         string _file_hook;
         DateTime _begin_from_sync;
         List<FileElement> _all_files_complete_dir = new List<FileElement>();
@@ -40,14 +40,13 @@ namespace ParameterNamespace
                 return _begin_from_sync;
             }
         }
-        public string ProjectName {
+        public string DatabaseFile {
             get {
-                return _project_name;
+                return _path_database_file;
             }
         }
-
-
-        public Parameter(string path_complete_dir, string path_exchange_dir, DateTime begin_sync_from, string project_name)
+        
+        public Parameter(string path_database_dir, string path_complete_dir, string path_exchange_dir, DateTime begin_sync_from)
         {
             this._path_complete_dir = AddBackslash(path_complete_dir);
             if (Directory.Exists(_path_complete_dir) == false) {
@@ -60,13 +59,15 @@ namespace ParameterNamespace
             if (Directory.Exists(_path_exchange_dir) == false) {
                 Directory.CreateDirectory(_path_exchange_dir);
             }
+            this._path_database_file = path_database_dir;
             this._begin_from_sync = begin_sync_from;
-            this._project_name = project_name;
 
             DirectoryExceptions = new List<string>();
             FileExtensionExceptions = new List<string>();
+
             //File_extension_exceptions.Add("dsdel"); // Dateiendung für Löschen von Dateien mit diesem Programm (DiffSync DELete)
-            this._file_hook = String.Format("{0}{1}.dshook", _path_exchange_dir, _project_name); // DiffSyncHook
+            string project_name = path_database_dir.Substring(path_database_dir.LastIndexOf('\\') + 1, path_database_dir.LastIndexOf('.') - path_database_dir.LastIndexOf('\\') - 1);
+            this._file_hook = String.Format("{0}{1}.dshook", _path_exchange_dir, project_name); // DiffSyncHook
         }
 
         public void GetAllFiles()
