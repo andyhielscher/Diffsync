@@ -165,23 +165,23 @@ namespace Diffsync
             Console.WriteLine("vollständiges Verzeichnis (\\\\FULL\\): {0}", complete_dir);
             Console.WriteLine("Austausch-Verzeichnis     (\\\\EXCH\\): {0}", exchange_dir);
             Console.WriteLine("");
-            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt und überschrieben (+) oder gelöscht (-) werden:");
+            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt und überschrieben (+) oder gelöscht (del) werden:");
             Console.WriteLine("Aktion | Dateipfad                                                                                                               | Erstelldatum     | Schreibdatum     | Größe");
             Console.WriteLine("-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
             foreach (FileElement file_element in files) {
                 string action;
                 string short_dir;
                 if (file_element.WillBeDeleted == true) {
-                    action = "-";
+                    action = "del";
                 } else {
-                    action = "+";
+                    action = "  +";
                 }
                 if (file_element.FromCompleteDir == true) {
                     short_dir = "\\\\FULL\\";
                 } else {
                     short_dir = "\\\\EXCH\\";
                 }
-                Console.WriteLine("     {0} | {1}{2} | {3} | {4} | {5,7:##0.000} MB",
+                Console.WriteLine("   {0} | {1}{2} | {3} | {4} | {5,7:##0.000} MB",
                 action,
                 short_dir, file_element.RelativePathToPrint(112),
                 file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
@@ -266,17 +266,16 @@ namespace Diffsync
                         }
                     }
                 } else {
-                    // dieser Block kann nur mit Vergleich der Datenbank erreicht werden
                     if (file_element.FromCompleteDir == true) {
                         // Datei ist im vollständigen Verzeichnis nicht mehr vorhanden, folglich im Austausch-Verzeichnis als zu löschen markieren
                         file = new FileInfo(String.Format("{0}{1}.dsdel", exchange_dir, file_element.RelativePath));
                         file.Create();
                     } else {
                         // "Markierung" im Austausch-Verzeichnis löschen und im vollständigen Verzeichnis richtige Datei löschen
-                        destination_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
-                        source_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath);
+                        destination_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath.Substring(0, file_element.RelativePath.Length - 6)); // Endung ".dsdel" wird abgeschnitten
+                        source_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
+                        TryToDeleteFile(destination_path);
                         TryToDeleteFile(source_path);
-                        TryToDeleteFile(destination_path.Substring(0, destination_path.Length - 6)); // Endung ".dsdel" wird abgeschnitten
                     }
                 }
             }
@@ -294,11 +293,13 @@ namespace Diffsync
         static void TryToDeleteFile(string path)
         {
             FileInfo file = new FileInfo(path);
-            try {
-                file.Delete();
-            } catch (IOException delete_error) {
-                Console.WriteLine("Die Datei {} kann nicht gelöscht werden. Bitte manuell löschen", path);
-                Console.WriteLine(delete_error.Message);
+            if (file.Exists) {
+                try {
+                    file.Delete();
+                } catch (IOException delete_error) {
+                    Console.WriteLine(String.Format("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen", path));
+                    Console.WriteLine(delete_error.Message);
+                }
             }
         }
     }
