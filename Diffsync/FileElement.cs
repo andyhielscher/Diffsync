@@ -80,6 +80,9 @@ namespace FileElementNamespace
             this._date_written = file_info.LastWriteTime;
             this._root_directory_path_length = root_directory_path_length;
             this._from_complete_dir = complete_dir;
+            if (path.EndsWith(".dsdel")) {
+                this._will_be_deleted = true;
+            }
         }
 
         public string PathToPrint(int num_letters)
