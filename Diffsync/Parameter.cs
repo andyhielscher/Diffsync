@@ -114,6 +114,9 @@ namespace ParameterNamespace
                 // noch keine Datenbank verfügbar, einfach nach Datum entscheiden
                 return (GetFilesToSyncSinceDate());
             } else {
+
+                // TO-DO: DIESEN BLOCK PRÜFEN
+
                 // Datenbank verfügbar, einfach mit Datenbank vergleichen
                 return (GetFilesToSyncDatabase());
             }
