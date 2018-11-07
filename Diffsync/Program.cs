@@ -36,6 +36,8 @@ namespace Diffsync
             Console.WindowWidth = 180;
             Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
+            // TO-DO: Wie können DirectoryExceptions/FileextensionExceptions wieder zurück genommen werden?
+
             // Argumente verarbeiten
             string database_file = null;
             string complete_directory = null;
@@ -129,7 +131,7 @@ namespace Diffsync
             List<FileElement> files_to_copy = parameter.GetFilesToSync();
 
             // Dateien ausgeben, welche kopiert werden
-            PrintFilesToSync(ref files_to_copy, parameter.PathCompleteDir, parameter.PathExchangeDir);
+            PrintFilesToSync(ref files_to_copy, ref parameter);
 
             // Auf Bestätigung des Users zum weiteren Programmablauf wartenConsole.WriteLine();
             Console.WriteLine("");
@@ -162,12 +164,18 @@ namespace Diffsync
             Environment.Exit(0);
         }
 
-        static void PrintFilesToSync(ref List<FileElement> files, string complete_dir, string exchange_dir)
+        static void PrintFilesToSync(ref List<FileElement> files, ref Parameter parameter)
         {
             Console.WriteLine("");
             Console.WriteLine("Übersicht der beiden Verzeichnisse zur Synchronisierung:");
-            Console.WriteLine("vollständiges Verzeichnis (\\\\FULL\\): {0}", complete_dir);
-            Console.WriteLine("Austausch-Verzeichnis     (\\\\EXCH\\): {0}", exchange_dir);
+            Console.WriteLine("vollständiges Verzeichnis (\\\\FULL\\): {0}", parameter.PathCompleteDir);
+            Console.WriteLine("Austausch-Verzeichnis     (\\\\EXCH\\): {0}", parameter.PathExchangeDir);
+            Console.WriteLine("");
+            Console.WriteLine("Übersicht der ausgeschlossenen Verzeichnisse:");
+            foreach (string directory_exception in parameter.DirectoryExceptions) {
+                Console.WriteLine(String.Format("  {0}", directory_exception));
+            }
+            // To-Do: File-Exceptions ausgeben
             Console.WriteLine("");
             Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt (+), überschrieben (over) oder gelöscht (del) werden:");
             Console.WriteLine("Aktion | Dateipfad                                                                                                               | Erstelldatum     | Schreibdatum     | Größe");
