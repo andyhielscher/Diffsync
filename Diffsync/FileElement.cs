@@ -13,7 +13,8 @@ namespace FileElementNamespace
         DateTime _date_written;
         int _root_directory_path_length;
         bool _will_be_copied;
-        bool _will_be_deleted; // benötigt Datenbank
+        bool _will_be_deleted;
+        bool _will_be_overwritten;
         bool _from_complete_dir;
 
         public string Path
@@ -68,7 +69,12 @@ namespace FileElementNamespace
                 return (this._will_be_deleted);
             }
         }
-        //public bool Conflict { get; set; }
+        public bool WillBeOverwritten
+        {
+            get {
+                return (this._will_be_overwritten);
+            }
+        }
 
         public FileElement(string path, int root_directory_path_length, bool complete_dir)
         {
@@ -138,6 +144,11 @@ namespace FileElementNamespace
         public void SetToDelete()
         {
             this._will_be_deleted = true;
+        }
+
+        public void SetToOverwrite()
+        {
+            this._will_be_overwritten = true;
         }
     }
 }

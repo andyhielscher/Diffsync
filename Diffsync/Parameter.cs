@@ -149,6 +149,7 @@ namespace ParameterNamespace
                 if (index_database > -1) {
                     // Element in Datenbank enthalten, hat sich das Element geändert?
                     if (file_element.Size != _all_files_database[index_database].Size || file_element.DateCreated != _all_files_database[index_database].DateCreated || file_element.DateWritten != _all_files_database[index_database].DateWritten) {
+                        file_element.SetToOverwrite();
                         files_to_sync.Add(file_element);
                     }
                 } else {

@@ -169,7 +169,7 @@ namespace Diffsync
             Console.WriteLine("vollständiges Verzeichnis (\\\\FULL\\): {0}", complete_dir);
             Console.WriteLine("Austausch-Verzeichnis     (\\\\EXCH\\): {0}", exchange_dir);
             Console.WriteLine("");
-            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt und überschrieben (+) oder gelöscht (del) werden:");
+            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt (+), überschrieben (**) oder gelöscht (del) werden:");
             Console.WriteLine("Aktion | Dateipfad                                                                                                               | Erstelldatum     | Schreibdatum     | Größe");
             Console.WriteLine("-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
             foreach (FileElement file_element in files) {
@@ -178,7 +178,11 @@ namespace Diffsync
                 if (file_element.WillBeDeleted == true) {
                     action = "del";
                 } else {
-                    action = "  +";
+                    if (file_element.WillBeOverwritten) {
+                        action = " **";
+                    } else {
+                        action = "  +";
+                    }
                 }
                 if (file_element.FromCompleteDir == true) {
                     short_dir = "\\\\FULL\\";
