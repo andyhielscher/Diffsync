@@ -90,9 +90,11 @@ namespace ParameterNamespace
             foreach (string sub_directory in sub_directories) {
                 if (IsDirectoryUsable(sub_directory)) {
                     GetSubDirectoryFiles(sub_directory, ref file_elements, root_directory_path_length, complete_dir);
-                    GetDirectoryFiles(sub_directory, ref file_elements, root_directory_path_length, complete_dir);
                 }
             }
+
+            // IsDirectoryUsable == true, da schon geprüft in vorheriger Ebene der Rekursion
+            GetDirectoryFiles(directory, ref file_elements, root_directory_path_length, complete_dir);
         }
 
         void GetDirectoryFiles(string directory, ref List<FileElement> file_elements, int root_directory_path_length, bool complete_dir)
@@ -114,9 +116,6 @@ namespace ParameterNamespace
                 // noch keine Datenbank verfügbar, einfach nach Datum entscheiden
                 return (GetFilesToSyncSinceDate());
             } else {
-
-                // TO-DO: DIESEN BLOCK PRÜFEN
-
                 // Datenbank verfügbar, einfach mit Datenbank vergleichen
                 return (GetFilesToSyncDatabase());
             }
@@ -149,7 +148,7 @@ namespace ParameterNamespace
                 index_database = _all_files_database.FindIndex(x => x.Path == file_element.Path); // es wird auf exakt gleichen String geprüft
                 if (index_database > -1) {
                     // Element in Datenbank enthalten, hat sich das Element geändert?
-                    if (file_element.Size != _all_files_database[index_database].Size || file_element.DateCreated > _all_files_database[index_database].DateCreated || file_element.DateWritten > _all_files_database[index_database].DateWritten) {
+                    if (file_element.Size != _all_files_database[index_database].Size || file_element.DateCreated != _all_files_database[index_database].DateCreated || file_element.DateWritten != _all_files_database[index_database].DateWritten) {
                         files_to_sync.Add(file_element);
                     }
                 } else {
@@ -181,7 +180,8 @@ namespace ParameterNamespace
             // Speichern in Datenbank. Alte Datenbank löschen und durch aktuellen Stand überschreiben
             // es werden nur _all_files_database gespeichert, alles andere kann gelöscht werden
             GetAllFiles();
-            _all_files_database = _all_files_complete_dir;
+            _all_files_database.Clear();
+            _all_files_database.AddRange(_all_files_complete_dir);
             _all_files_complete_dir.Clear();
             _all_files_exchange_dir.Clear();
         }
