@@ -177,27 +177,23 @@ namespace Diffsync
             }
             // To-Do: File-Exceptions ausgeben
             Console.WriteLine("");
-            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt (+), überschrieben (over) oder gelöscht (del) werden:");
+            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt und überschrieben (+) oder gelöscht (del) werden:");
             Console.WriteLine("Aktion | Dateipfad                                                                                                               | Erstelldatum     | Schreibdatum     | Größe");
             Console.WriteLine("-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
             foreach (FileElement file_element in files) {
                 string action;
                 string short_dir;
                 if (file_element.WillBeDeleted == true) {
-                    action = " del";
+                    action = "del";
                 } else {
-                    if (file_element.WillBeOverwritten) {
-                        action = "over";
-                    } else {
-                        action = "   +";
-                    }
+                    action = "  +";
                 }
                 if (file_element.FromCompleteDir == true) {
                     short_dir = "\\\\FULL\\";
                 } else {
                     short_dir = "\\\\EXCH\\";
                 }
-                Console.WriteLine("  {0} | {1}{2} | {3} | {4} | {5,7:##0.000} MB",
+                Console.WriteLine("   {0} | {1}{2} | {3} | {4} | {5,7:##0.000} MB",
                 action,
                 short_dir, file_element.RelativePathToPrint(112),
                 file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
@@ -251,35 +247,11 @@ namespace Diffsync
                         file.CopyTo(destination_path, true);
                     } else {
                         // aus Austausch-Verzeichnis in vollständiges Verzeichnis verschieben
-                        // Hinweis: Es kann ein Konflikt entstehen, wenn Datei im vollständigen Verzeichnis neuer ist. In diesem Fall wird eine Abfrage an den Benutzer gestellt.
-                        FileInfo file_dest = new FileInfo(destination_path);
-                        if (file_dest.Exists) {
-                            // die Datei existiert bereits im vollständigen Verzeichnis, auf Konflikt prüfen
-                            if (file_dest.CreationTime > file_element.DateCreated || file_dest.LastWriteTime > file_element.DateWritten) {
-                                // Konflikt
-                                Console.WriteLine("KONFLIKT: Datei {0} ist neuer als im Austausch-Verzeichnis", destination_path);
-                                Console.WriteLine("    Datei in \\\\FULL\\: {0} | {1} | {2,7:##0.000} MB", 
-                                    file_dest.CreationTime.ToString("yyyy-MM-dd HH:mm"),
-                                    file_dest.LastWriteTime.ToString("yyyy-MM-dd HH:mm"),
-                                    file_dest.Length / 1024 / 1024);
-                                Console.WriteLine("    Datei in \\\\EXCH\\: {0} | {1} | {2,7:##0.000} MB",
-                                    file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
-                                    file_element.DateWritten.ToString("yyyy-MM-dd HH:mm"),
-                                    file_element.Size);
-                                Console.WriteLine("    Soll die Datei im vollständigen Verzeichnis überschrieben werden (j/n)?");
-                                if (UserInputIsYes()) {
-                                    file_dest.Delete();
-                                    file.MoveTo(destination_path);
-                                } else {
-                                    TryToDeleteFile(source_path);
-                                }
-                            } else {
-                                file_dest.Delete();
-                                file.MoveTo(destination_path);
-                            }
-                        } else {
-                            file.MoveTo(destination_path);
-                        }
+                        // Hinweise: 
+                        // 1. Es kann ein Konflikt entstehen, wenn Datei im vollständigen Verzeichnis neuer ist. In diesem Fall wird eine Abfrage an den Benutzer gestellt.
+                        // 2. Konfliktbehandlung bereits Parameter.GetFilesToSyncDatabase durchgeführt.
+                        TryToDeleteFile(destination_path);
+                        file.MoveTo(destination_path);
                     }
                 } else {
                     if (file_element.FromCompleteDir == true) {

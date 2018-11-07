@@ -14,7 +14,6 @@ namespace FileElementNamespace
         int _root_directory_path_length;
         bool _will_be_copied;
         bool _will_be_deleted;
-        bool _will_be_overwritten;
         bool _from_complete_dir;
 
         public string Path
@@ -26,7 +25,7 @@ namespace FileElementNamespace
         public string RelativePath
         {
             get {
-                // excklusive vorgestelltem "\"
+                // exklusive vorgestelltem "\"
                 return (_path.Substring(_root_directory_path_length));
             }
         }
@@ -67,12 +66,6 @@ namespace FileElementNamespace
         {
             get {
                 return (this._will_be_deleted);
-            }
-        }
-        public bool WillBeOverwritten
-        {
-            get {
-                return (this._will_be_overwritten);
             }
         }
 
@@ -144,11 +137,6 @@ namespace FileElementNamespace
         public void SetToDelete()
         {
             this._will_be_deleted = true;
-        }
-
-        public void SetToOverwrite()
-        {
-            this._will_be_overwritten = true;
         }
     }
 }
