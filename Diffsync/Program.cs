@@ -169,19 +169,19 @@ namespace Diffsync
             Console.WriteLine("vollständiges Verzeichnis (\\\\FULL\\): {0}", complete_dir);
             Console.WriteLine("Austausch-Verzeichnis     (\\\\EXCH\\): {0}", exchange_dir);
             Console.WriteLine("");
-            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt (+), überschrieben (**) oder gelöscht (del) werden:");
+            Console.WriteLine("Es folgt die Ausgabe aller Dateien, die neu erstellt (+), überschrieben (over) oder gelöscht (del) werden:");
             Console.WriteLine("Aktion | Dateipfad                                                                                                               | Erstelldatum     | Schreibdatum     | Größe");
             Console.WriteLine("-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------");
             foreach (FileElement file_element in files) {
                 string action;
                 string short_dir;
                 if (file_element.WillBeDeleted == true) {
-                    action = "del";
+                    action = " del";
                 } else {
                     if (file_element.WillBeOverwritten) {
-                        action = " **";
+                        action = "over";
                     } else {
-                        action = "  +";
+                        action = "   +";
                     }
                 }
                 if (file_element.FromCompleteDir == true) {
@@ -189,7 +189,7 @@ namespace Diffsync
                 } else {
                     short_dir = "\\\\EXCH\\";
                 }
-                Console.WriteLine("   {0} | {1}{2} | {3} | {4} | {5,7:##0.000} MB",
+                Console.WriteLine("  {0} | {1}{2} | {3} | {4} | {5,7:##0.000} MB",
                 action,
                 short_dir, file_element.RelativePathToPrint(112),
                 file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
