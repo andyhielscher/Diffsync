@@ -136,7 +136,6 @@ namespace Diffsync
             // Auf Bestätigung des Users zum weiteren Programmablauf wartenConsole.WriteLine();
             Console.WriteLine("");
             Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
-            Console.WriteLine("(HINWEIS: Bei Konflikten wird stets auf den User-Input gewartet)");
             if (UserInputIsYes() == false) {
                 Console.WriteLine("Programm wird beendet. Bitte Enter drücken.");
                 Console.ReadLine();
