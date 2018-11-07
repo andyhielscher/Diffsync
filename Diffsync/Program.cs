@@ -97,7 +97,9 @@ namespace Diffsync
             if (file.Exists) {
                 // Datenbank laden
                 parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(database_file); // Extension dsdb = DiffSync DataBase
+                Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet.");
             } else {
+                // Parameter neu erstellen
                 parameter = new Parameter(database_file, complete_directory, exchange_directory, date_sync);
                 foreach (string directory_exception in directory_exceptions) {
                     parameter.DirectoryExceptions.Add(directory_exception);
@@ -105,6 +107,7 @@ namespace Diffsync
                 foreach (string file_extension_exception in file_extension_exceptions) {
                     parameter.FileExtensionExceptions.Add(file_extension_exception);
                 }
+                Console.WriteLine("Keine Datenbank gefunden. Synchronisierungsvorgang wird anhand von Datumsänderungen gestartet.");
             }
             
             // Filehook überprüfen; falls Datei mit Namen == Project_name existiert, kann nicht nochmal kopiert werden
@@ -161,6 +164,7 @@ namespace Diffsync
 
         static void PrintFilesToSync(ref List<FileElement> files, string complete_dir, string exchange_dir)
         {
+            Console.WriteLine("");
             Console.WriteLine("Übersicht der beiden Verzeichnisse zur Synchronisierung:");
             Console.WriteLine("vollständiges Verzeichnis (\\\\FULL\\): {0}", complete_dir);
             Console.WriteLine("Austausch-Verzeichnis     (\\\\EXCH\\): {0}", exchange_dir);
