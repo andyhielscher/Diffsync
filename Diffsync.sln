@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2027
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Diffsync", "Diffsync\Diffsync.csproj", "{F734B913-2B20-47D6-A230-7F98CA146C6C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F734B913-2B20-47D6-A230-7F98CA146C6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F734B913-2B20-47D6-A230-7F98CA146C6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F734B913-2B20-47D6-A230-7F98CA146C6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F734B913-2B20-47D6-A230-7F98CA146C6C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B85CBED4-FC7E-441A-8907-0D8693636E80}
+	EndGlobalSection
+EndGlobal
