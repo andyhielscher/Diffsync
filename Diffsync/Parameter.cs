@@ -249,6 +249,7 @@ namespace ParameterNamespace
             foreach (string file_element in all_files) {
                 try {
                     File.Delete(file_element);
+                    
                 } catch (IOException delete_error) {
                     Console.WriteLine("Die Datei {} kann nicht gelöscht werden. Bitte manuell löschen", file_element);
                     Console.WriteLine(delete_error.Message);
@@ -276,7 +277,12 @@ namespace ParameterNamespace
             }
 
             if (!Directory.EnumerateFileSystemEntries(directory).Any()) {
-                Directory.Delete(directory);
+                try {
+                    Directory.Delete(directory);
+                } catch (IOException delete_error) {
+                    Console.WriteLine(String.Format("Das Verzeichnis {0} kann nicht gelöscht werden. Bitte manuell löschen", directory));
+                    Console.WriteLine(delete_error.Message);
+                }
             }
         }
 
