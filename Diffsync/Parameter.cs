@@ -244,14 +244,13 @@ namespace ParameterNamespace
         public void DeleteOtherFileHook()
         {
             string[] all_files;
-            all_files = Directory.GetFiles(this._path_exchange_dir, "*.dshook");
+            all_files = Directory.GetFiles(this._path_exchange_dir, "*.dshook", SearchOption.TopDirectoryOnly);
 
             foreach (string file_element in all_files) {
                 try {
                     File.Delete(file_element);
-                    
                 } catch (IOException delete_error) {
-                    Console.WriteLine("Die Datei {} kann nicht gelöscht werden. Bitte manuell löschen", file_element);
+                    Console.WriteLine("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen", file_element);
                     Console.WriteLine(delete_error.Message);
                 }
             }
