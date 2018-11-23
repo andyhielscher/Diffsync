@@ -81,12 +81,7 @@ namespace Diffsync
                 });
 
             // wurden Argumente korrekt verarbeitet?
-            if (error) {
-                Console.WriteLine("Zum Beenden Enter drücken.");
-                Console.ReadLine();
-                Environment.Exit(0);
-            }
-            if (result.Tag == ParserResultType.NotParsed) {
+            if (error || result.Tag == ParserResultType.NotParsed) {
                 // Fehler bzw. der Block wird auch erreicht bei Eingabe von "--help" oder "--version"
                 Console.WriteLine("Zum Beenden Enter drücken.");
                 Console.ReadLine();
@@ -103,15 +98,19 @@ namespace Diffsync
             } else {
                 // Parameter neu erstellen
                 parameter = new Parameter(database_file, complete_directory, exchange_directory, date_sync);
-                foreach (string directory_exception in directory_exceptions) {
-                    parameter.DirectoryExceptions.Add(directory_exception);
-                }
-                foreach (string file_extension_exception in file_extension_exceptions) {
-                    parameter.FileExtensionExceptions.Add(file_extension_exception);
-                }
                 Console.WriteLine("Keine Datenbank gefunden. Synchronisierungsvorgang wird anhand von Datumsänderungen gestartet. Bitte warten.");
             }
-            
+
+            // Parameter Exceptions neu laden
+            parameter.DirectoryExceptions.Clear();
+            foreach (string directory_exception in directory_exceptions) {
+                parameter.DirectoryExceptions.Add(directory_exception);
+            }
+            parameter.FileExtensionExceptions.Clear();
+            foreach (string file_extension_exception in file_extension_exceptions) {
+                parameter.FileExtensionExceptions.Add(file_extension_exception);
+            }
+
             // Filehook überprüfen; falls Datei mit Namen == Project_name existiert, kann nicht nochmal kopiert werden
             if (parameter.FileHookExists()) {
                 // Programm wurde schon ausgeführt und kann nicht noch einmal gestartet werden
