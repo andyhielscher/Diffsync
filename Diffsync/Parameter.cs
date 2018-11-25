@@ -264,7 +264,11 @@ namespace ParameterNamespace
 
         public void DeleteEmptyExchangeDirectories()
         {
-            DeleteEmptySubDirectories(_path_exchange_dir);
+            string[] sub_directories = Directory.GetDirectories(_path_exchange_dir);
+
+            foreach (string sub_directory in sub_directories) {
+                DeleteEmptySubDirectories(sub_directory);
+            }
         }
 
         void DeleteEmptySubDirectories(string directory)
