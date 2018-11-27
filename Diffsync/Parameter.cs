@@ -45,7 +45,12 @@ namespace ParameterNamespace
                 return _path_database_file;
             }
         }
-        
+
+        public Parameter()
+        {
+
+        }
+
         public Parameter(string path_database_dir, string path_complete_dir, string path_exchange_dir, DateTime begin_sync_from)
         {
             this._path_complete_dir = AddBackslash(path_complete_dir);
