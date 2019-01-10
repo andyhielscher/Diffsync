@@ -36,35 +36,27 @@ namespace Diffsync
             Console.WindowWidth = 180;
             Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
-            // TO-DO: Wie können DirectoryExceptions/FileextensionExceptions wieder zurück genommen werden?
+            // initialisieren
+            Parameter parameter = new Parameter();
 
             // Argumente verarbeiten
-            string database_file = null;
-            string complete_directory = null;
-            string exchange_directory = null;
-            List<string> directory_exceptions = new List<string>();
-            List<string> file_extension_exceptions = new List<string>();
-            DateTime date_sync = new DateTime(2000, 1, 1, 0, 0, 0);
             bool error = false;
             var result = Parser.Default.ParseArguments<Options>(args)
                 .WithParsed<Options>(options => {
+                    // verschiedene Checks der Argumente
                     if (options.DatabaseDirectory.EndsWith(".dsdb") == false) {
-                        Console.WriteLine("Falsche Dateiendung der Datenbank. Datenbank muss auf \".dsdb\" enden.");
+                        Console.Error.WriteLine("Falsche Dateiendung der Datenbank. Datenbank muss auf \".dsdb\" enden.");
                         error = true;
                     }
-                    database_file = options.DatabaseDirectory;
-                    complete_directory = options.CompleteDirectory;
-                    exchange_directory = options.ExchangeDirectory;
-                    foreach (string directory_exception in options.DirectoryExceptions) {
-                        if (directory_exception.StartsWith("\\") == false) {
-                            Console.WriteLine(String.Format("Fehler in DirectoryExceptions {0}. Beginnt nicht mit \"\\\".", directory_exception));
-                            error = true;
-                        }
-                        directory_exceptions.Add(directory_exception);
+                    if (Directory.Exists(options.CompleteDirectory) == false) {
+                        Console.Error.WriteLine("Hauptverzeichnis {0} nicht gefunden!", options.CompleteDirectory);
+                        error = true;
                     }
-                    foreach (string file_extension_exception in options.FileExtensionExceptions) {
-                        file_extension_exceptions.Add(file_extension_exception);
+                    if (Directory.Exists(options.ExchangeDirectory) == false) {
+                        Console.Error.WriteLine("Austauschverzeichnis {0} nicht gefunden!", options.ExchangeDirectory);
+                        error = true;
                     }
+                    DateTime date_sync = new DateTime(2000, 1, 1, 0, 0, 0);
                     if (options.DateSync != null) {
                         try {
                             date_sync = new DateTime(Convert.ToInt32(options.DateSync.Substring(0, 4)),
@@ -74,8 +66,44 @@ namespace Diffsync
                                 Convert.ToInt32(options.DateSync.Substring(14, 2)),
                                 0);
                         } catch {
-                            Console.WriteLine("Fehler beim Verarbeiten des Datums. Datum muss vom Format \"YYYY-MM-TT hh:mm\" sein.");
+                            Console.Error.WriteLine("Fehler beim Verarbeiten des Datums. Datum muss vom Format \"YYYY-MM-TT hh:mm\" sein.");
                             error = true;
+                        }
+                    }
+                    foreach (string directory_exception in options.DirectoryExceptions) {
+                        if (directory_exception.StartsWith("\\") == false) {
+                            Console.WriteLine(String.Format("Fehler in DirectoryExceptions {0}. Beginnt nicht mit \"\\\".", directory_exception));
+                            error = true;
+                        }
+                    }
+
+                    if (error == false) {
+                        // Datenbank auf Existenz prüfen
+                        FileInfo file = new FileInfo(options.DatabaseDirectory);
+                        if (file.Exists) {
+                            // Datenbank Backup erstellen und dann laden
+                            DatabaseCreateBackup(options.DatabaseDirectory);
+                            parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory); // Extension dsdb = DiffSync DataBase
+                            Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
+#if DEBUG
+                            // debugging
+                            parameter.SetPathCompleteDir(options.CompleteDirectory);
+                            parameter.SetPathExchangeDir(options.ExchangeDirectory);
+#endif
+                        } else {
+                            // Parameter neu erstellen
+                            parameter = new Parameter(options.DatabaseDirectory, options.CompleteDirectory, options.ExchangeDirectory, date_sync);
+                            Console.WriteLine("Keine Datenbank gefunden. Synchronisierungsvorgang wird anhand von Datumsänderungen gestartet. Bitte warten.");
+                        }
+
+                        // Parameter Exceptions neu laden
+                        parameter.DirectoryExceptions.Clear();
+                        foreach (string directory_exception in options.DirectoryExceptions) {
+                            parameter.DirectoryExceptions.Add(directory_exception);
+                        }
+                        parameter.FileExtensionExceptions.Clear();
+                        foreach (string file_extension_exception in options.FileExtensionExceptions) {
+                            parameter.FileExtensionExceptions.Add(file_extension_exception);
                         }
                     }
                 });
@@ -86,29 +114,6 @@ namespace Diffsync
                 Console.WriteLine("Zum Beenden Enter drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
-            }
-
-            // initialisieren
-            Parameter parameter;
-            FileInfo file = new FileInfo(database_file);
-            if (file.Exists) {
-                // Datenbank laden
-                parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(database_file); // Extension dsdb = DiffSync DataBase
-                Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
-            } else {
-                // Parameter neu erstellen
-                parameter = new Parameter(database_file, complete_directory, exchange_directory, date_sync);
-                Console.WriteLine("Keine Datenbank gefunden. Synchronisierungsvorgang wird anhand von Datumsänderungen gestartet. Bitte warten.");
-            }
-
-            // Parameter Exceptions neu laden
-            parameter.DirectoryExceptions.Clear();
-            foreach (string directory_exception in directory_exceptions) {
-                parameter.DirectoryExceptions.Add(directory_exception);
-            }
-            parameter.FileExtensionExceptions.Clear();
-            foreach (string file_extension_exception in file_extension_exceptions) {
-                parameter.FileExtensionExceptions.Add(file_extension_exception);
             }
 
             // Filehook überprüfen; falls Datei mit Namen == Project_name existiert, kann nicht nochmal kopiert werden
@@ -149,9 +154,10 @@ namespace Diffsync
             // leere Ordner im Austausch-Verzeichnis löschen
             parameter.DeleteEmptyExchangeDirectories();
 
-            // Datenbank speichern
+            // Datenbank speichern und Datenbank-Backup löschen
             parameter.PrepareSaveToDatabase();
             BinarySerialization.WriteToBinaryFile<Parameter>(parameter.DatabaseFile, parameter); // Extension = DiffSync DataBase
+            TryToDeleteFile(String.Format("{0}.backup", parameter.DatabaseFile));
 
             // Filehook setzen
             parameter.SetFileHook();
@@ -289,6 +295,13 @@ namespace Diffsync
                     Console.WriteLine(delete_error.Message);
                 }
             }
+        }
+
+        static void DatabaseCreateBackup(string file)
+        {
+            string backup_path = String.Format("{0}.backup", file);
+            FileInfo file_info = new FileInfo(file);
+            file_info.CopyTo(backup_path, true);
         }
     }
 

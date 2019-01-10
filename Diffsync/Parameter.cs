@@ -45,7 +45,12 @@ namespace ParameterNamespace
                 return _path_database_file;
             }
         }
-        
+
+        public Parameter()
+        {
+
+        }
+
         public Parameter(string path_database_dir, string path_complete_dir, string path_exchange_dir, DateTime begin_sync_from)
         {
             this._path_complete_dir = AddBackslash(path_complete_dir);
@@ -69,6 +74,18 @@ namespace ParameterNamespace
             string project_name = path_database_dir.Substring(path_database_dir.LastIndexOf('\\') + 1, path_database_dir.LastIndexOf('.') - path_database_dir.LastIndexOf('\\') - 1);
             this._file_hook = String.Format("{0}{1}.dshook", _path_exchange_dir, project_name); // DiffSyncHook
         }
+
+#if DEBUG
+        public void SetPathCompleteDir(string path)
+        {
+            _path_complete_dir = path;
+        }
+
+        public void SetPathExchangeDir(string path)
+        {
+            _path_exchange_dir = path;
+        }
+#endif
 
         public void GetAllFiles()
         {
