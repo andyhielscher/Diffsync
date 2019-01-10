@@ -81,7 +81,8 @@ namespace Diffsync
                         // Datenbank auf Existenz prüfen
                         FileInfo file = new FileInfo(options.DatabaseDirectory);
                         if (file.Exists) {
-                            // Datenbank laden
+                            // Datenbank Backup erstellen und dann laden
+                            DatabaseCreateBackup(options.DatabaseDirectory);
                             parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory); // Extension dsdb = DiffSync DataBase
                             Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
                         } else {
@@ -148,9 +149,10 @@ namespace Diffsync
             // leere Ordner im Austausch-Verzeichnis löschen
             parameter.DeleteEmptyExchangeDirectories();
 
-            // Datenbank speichern
+            // Datenbank speichern und Datenbank-Backup löschen
             parameter.PrepareSaveToDatabase();
             BinarySerialization.WriteToBinaryFile<Parameter>(parameter.DatabaseFile, parameter); // Extension = DiffSync DataBase
+            TryToDeleteFile(String.Format("{0}.backup", parameter.DatabaseFile));
 
             // Filehook setzen
             parameter.SetFileHook();
@@ -288,6 +290,13 @@ namespace Diffsync
                     Console.WriteLine(delete_error.Message);
                 }
             }
+        }
+
+        static void DatabaseCreateBackup(string file)
+        {
+            string backup_path = String.Format("{0}.backup", file);
+            FileInfo file_info = new FileInfo(file);
+            file_info.CopyTo(backup_path, true);
         }
     }
 
