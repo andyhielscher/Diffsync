@@ -85,6 +85,11 @@ namespace Diffsync
                             DatabaseCreateBackup(options.DatabaseDirectory);
                             parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory); // Extension dsdb = DiffSync DataBase
                             Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
+#if DEBUG
+                            // debugging
+                            parameter.SetPathCompleteDir(options.CompleteDirectory);
+                            parameter.SetPathExchangeDir(options.ExchangeDirectory);
+#endif
                         } else {
                             // Parameter neu erstellen
                             parameter = new Parameter(options.DatabaseDirectory, options.CompleteDirectory, options.ExchangeDirectory, date_sync);
