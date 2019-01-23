@@ -110,7 +110,7 @@ namespace FileElementNamespace
                 int path_shortend_length;
 
                 path_shortend_length = parts[parts.Length - 1].Length;
-                if (path_shortend_length < num_letters) {
+                if (path_shortend_length < num_letters - 4) {
                     int i = 0;
                     do {
                         if (parts[i].Length < num_letters - path_shortend_length - 4) {
@@ -124,7 +124,17 @@ namespace FileElementNamespace
                     } while (i < parts.Length - 1);
                     path_shortend = String.Format("{0}{1}", path_shortend, parts[parts.Length - 1]);
                 } else {
-                    path_shortend = String.Format("{0}...{1}", parts[parts.Length - 1].Substring(0, num_letters / 2 - 2), parts[parts.Length - 1].Substring(path_shortend_length - num_letters / 2 + 1));
+                    if (path_shortend_length < num_letters - 2) {
+                        path_shortend = String.Format("..\\{0}", parts[parts.Length - 1]);
+                        for (int i = path_shortend_length + 3; i < num_letters; i++) {
+                            path_shortend = String.Format("{0} ", path_shortend);
+                        }
+                    } else {
+                        double result = Convert.ToDouble(num_letters - 6) / 2;
+                        int substring1_length = Convert.ToInt16(Math.Floor(result));
+                        int substring2_start = path_shortend_length - (num_letters - 6 - substring1_length);
+                        path_shortend = String.Format("..\\{0}...{1}", parts[parts.Length - 1].Substring(0, substring1_length), parts[parts.Length - 1].Substring(substring2_start));
+                    }
                 }
                 return (path_shortend);
             }
