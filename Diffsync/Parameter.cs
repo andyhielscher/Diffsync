@@ -75,17 +75,21 @@ namespace ParameterNamespace
             this._file_hook = String.Format("{0}{1}.dshook", _path_exchange_dir, project_name); // DiffSyncHook
         }
 
-#if DEBUG
         public void SetPathCompleteDir(string path)
         {
-            _path_complete_dir = path;
+            _path_complete_dir = AddBackslash(path);
+            foreach (FileElement file_element in this._all_files_database) {
+                file_element.UpdateDirectory(_path_complete_dir, _path_complete_dir.Length);
+            }
         }
 
         public void SetPathExchangeDir(string path)
         {
-            _path_exchange_dir = path;
+            _path_exchange_dir = AddBackslash(path);
+            foreach (FileElement file_element in this._all_files_exchange_dir) {
+                file_element.UpdateDirectory(_path_exchange_dir, _path_exchange_dir.Length);
+            }
         }
-#endif
 
         public void GetAllFiles()
         {

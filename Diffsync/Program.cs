@@ -84,12 +84,31 @@ namespace Diffsync
                             // Datenbank Backup erstellen und dann laden
                             DatabaseCreateBackup(options.DatabaseDirectory);
                             parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory); // Extension dsdb = DiffSync DataBase
+
+                            // Check, ob Verzeichnisse noch gleich sind
+                            if (string.Compare(parameter.PathCompleteDir.TrimEnd('\\'), options.CompleteDirectory, true) != 0) {
+                                // vollständiges Verzeichnis nicht gleich
+                                Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                                Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
+                                Console.WriteLine("Parameter: {0}", options.CompleteDirectory);
+                                Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
+                                if (UserInputIsYes()) {
+                                    parameter.SetPathCompleteDir(options.CompleteDirectory);
+                                }
+                            }
+                            if (string.Compare(parameter.PathExchangeDir.TrimEnd('\\'), options.ExchangeDirectory, true) != 0) {
+                                // vollständiges Verzeichnis nicht gleich
+                                Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                                Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
+                                Console.WriteLine("Parameter: {0}", options.ExchangeDirectory);
+                                Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
+                                if (UserInputIsYes()) {
+                                    parameter.SetPathExchangeDir(options.ExchangeDirectory);
+                                }
+                            }
+
+                            // fertig
                             Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
-#if DEBUG
-                            // debugging
-                            parameter.SetPathCompleteDir(options.CompleteDirectory);
-                            parameter.SetPathExchangeDir(options.ExchangeDirectory);
-#endif
                         } else {
                             // Parameter neu erstellen
                             parameter = new Parameter(options.DatabaseDirectory, options.CompleteDirectory, options.ExchangeDirectory, date_sync);
