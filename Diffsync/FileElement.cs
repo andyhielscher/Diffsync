@@ -84,6 +84,12 @@ namespace FileElementNamespace
             }
         }
 
+        public void UpdateDirectory(string path, int root_directory_path_length)
+        {
+            this._path = String.Format("{0}{1}", path, this.RelativePath);
+            this._root_directory_path_length = root_directory_path_length;
+        }
+
         public string PathToPrint(int num_letters)
         {
             return (PreparePathToPrint(this._path, num_letters));
