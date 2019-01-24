@@ -85,7 +85,11 @@ namespace ParameterNamespace
 
         public void SetPathExchangeDir(string path)
         {
+            string old_path = _path_exchange_dir;
             _path_exchange_dir = AddBackslash(path);
+
+            _file_hook = _file_hook.Replace(old_path, _path_exchange_dir);
+
             foreach (FileElement file_element in this._all_files_exchange_dir) {
                 file_element.UpdateDirectory(_path_exchange_dir, _path_exchange_dir.Length);
             }
