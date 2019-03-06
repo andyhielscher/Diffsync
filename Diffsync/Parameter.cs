@@ -94,6 +94,10 @@ namespace ParameterNamespace
                 file_element.UpdateDirectory(_path_exchange_dir, _path_exchange_dir.Length);
             }
         }
+        public void SetDatabaseFile(string path)
+        {
+            _path_database_file = path;
+        }
 
         public void GetAllFiles()
         {

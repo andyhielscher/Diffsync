@@ -107,6 +107,18 @@ namespace Diffsync
                                 }
                             }
 
+                            // Check, ob Verzeichnis der Datenbank noch gleich ist
+                            if (string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
+                                // vollständiges Verzeichnis nicht gleich
+                                Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
+                                Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
+                                Console.WriteLine("Parameter: {0}", options.DatabaseDirectory);
+                                Console.WriteLine("Soll der Pfad zur Datenbank durch Parameter ersetzt werden (j/n)?");
+                                if (UserInputIsYes()) {
+                                    parameter.SetDatabaseFile(options.DatabaseDirectory);
+                                }
+                            }
+
                             // fertig
                             Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
                         } else {
