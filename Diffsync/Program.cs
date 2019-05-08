@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using FileElementNamespace;
 using ParameterNamespace;
+using System.Xml;
+using System.Xml.Serialization;
 using System.IO;
 using CommandLine;
 
@@ -11,7 +13,7 @@ namespace Diffsync
     {
         class Options
         {
-            [Option("DatabaseDirectory", Required = true, HelpText = "Pfad zum Verzeichnis der Datenbank. Falls Datenbank existiert, werden die anderen Angaben ignoriert und alle Eigenschaften aus der Datenbank eingelesen. Z.B. DatabaseDirectory=\"C:\\Users\\Name\\Documents\\Diffsync\\Sync Projekt xy.dsdb\"")]
+            [Option("DatabaseDirectory", Required = true, HelpText = "Pfad zum Verzeichnis der Datenbank. Falls Datenbank existiert, werden die anderen Angaben ignoriert und alle Eigenschaften aus der Datenbank eingelesen. Z.B. DatabaseDirectory=\"C:\\Users\\Name\\Documents\\Diffsync\\Sync Projekt xy.dsdx\"")]
             public string DatabaseDirectory { get; set; }
 
             [Option("CompleteDirectory", Required = false, HelpText = "Pfad zum vollständigen Verzeichnis, welches synchronisiert werden soll. Z.B. CompleteDirectory=\"C:\\Users\\Name\\Documents\\vollständiges Verzeichnis\". Hinweis: Verzeichnis darf NICHT mit \"\\\" enden!")]
@@ -41,11 +43,15 @@ namespace Diffsync
 
             // Argumente verarbeiten
             bool error = false;
+            bool binary_format = false;
             var result = Parser.Default.ParseArguments<Options>(args)
                 .WithParsed<Options>(options => {
                     // verschiedene Checks der Argumente
-                    if (options.DatabaseDirectory.EndsWith(".dsdb") == false) {
-                        Console.Error.WriteLine("Falsche Dateiendung der Datenbank. Datenbank muss auf \".dsdb\" enden.");
+                    if (options.DatabaseDirectory.EndsWith(".dsdb") == true) {
+                        // alte binäre Datenbank, wird ggf eingelesen und dann konvertiert
+                        binary_format = true;
+                    } else if (options.DatabaseDirectory.EndsWith(".dsdx") == false) {
+                        Console.Error.WriteLine("Falsche Dateiendung der Datenbank. Datenbank muss auf \".dsdx\" enden.");
                         error = true;
                     }
                     if (Directory.Exists(options.CompleteDirectory) == false) {
@@ -77,56 +83,69 @@ namespace Diffsync
                         }
                     }
 
-                    if (error == false) {
-                        // Datenbank auf Existenz prüfen
-                        FileInfo file = new FileInfo(options.DatabaseDirectory);
-                        if (file.Exists) {
-                            // Datenbank Backup erstellen und dann laden
-                            DatabaseCreateBackup(options.DatabaseDirectory);
-                            parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory); // Extension dsdb = DiffSync DataBase
-
-                            // Check, ob Verzeichnisse noch gleich sind
-                            if (string.Compare(parameter.PathCompleteDir.TrimEnd('\\'), options.CompleteDirectory, true) != 0) {
-                                // vollständiges Verzeichnis nicht gleich
-                                Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
-                                Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
-                                Console.WriteLine("Parameter: {0}", options.CompleteDirectory);
-                                Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
-                                if (UserInputIsYes()) {
-                                    parameter.SetPathCompleteDir(options.CompleteDirectory);
-                                }
+                    // Datenbank auf Existenz prüfen
+                    FileInfo file = new FileInfo(options.DatabaseDirectory);
+                    if (error == false && file.Exists) {
+                        // Datenbank Backup erstellen und dann laden
+                        DatabaseCreateBackup(options.DatabaseDirectory);
+                        if (binary_format) {
+                            // Extension dsdb = DiffSync Database Binary
+                            try {
+                                parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory);
+                            } catch (Exception e) {
+                                Console.Error.WriteLine("Fehler beim Einlesen der binären Datenbank.");
+                                Console.Error.Write("{0}", e);
+                                error = true;
                             }
-                            if (string.Compare(parameter.PathExchangeDir.TrimEnd('\\'), options.ExchangeDirectory, true) != 0) {
-                                // vollständiges Verzeichnis nicht gleich
-                                Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
-                                Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
-                                Console.WriteLine("Parameter: {0}", options.ExchangeDirectory);
-                                Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
-                                if (UserInputIsYes()) {
-                                    parameter.SetPathExchangeDir(options.ExchangeDirectory);
-                                }
-                            }
-
-                            // Check, ob Verzeichnis der Datenbank noch gleich ist
-                            if (string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
-                                // vollständiges Verzeichnis nicht gleich
-                                Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
-                                Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
-                                Console.WriteLine("Parameter: {0}", options.DatabaseDirectory);
-                                Console.WriteLine("Soll der Pfad zur Datenbank durch Parameter ersetzt werden (j/n)?");
-                                if (UserInputIsYes()) {
-                                    parameter.SetDatabaseFile(options.DatabaseDirectory);
-                                }
-                            }
-
-                            // fertig
-                            Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
                         } else {
-                            // Parameter neu erstellen
-                            parameter = new Parameter(options.DatabaseDirectory, options.CompleteDirectory, options.ExchangeDirectory, date_sync);
-                            Console.WriteLine("Keine Datenbank gefunden. Synchronisierungsvorgang wird anhand von Datumsänderungen gestartet. Bitte warten.");
+                            // Extension dsdx = DiffSync Database Xml
                         }
 
+                        // Check, ob Verzeichnisse noch gleich sind
+                        if (error == false && string.Compare(parameter.PathCompleteDir.TrimEnd('\\'), options.CompleteDirectory, true) != 0) {
+                            // vollständiges Verzeichnis nicht gleich
+                            Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                            Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
+                            Console.WriteLine("Parameter: {0}", options.CompleteDirectory);
+                            Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
+                            if (UserInputIsYes()) {
+                                parameter.SetPathCompleteDir(options.CompleteDirectory);
+                            }
+                        }
+                        if (error == false && string.Compare(parameter.PathExchangeDir.TrimEnd('\\'), options.ExchangeDirectory, true) != 0) {
+                            // vollständiges Verzeichnis nicht gleich
+                            Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                            Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
+                            Console.WriteLine("Parameter: {0}", options.ExchangeDirectory);
+                            Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
+                            if (UserInputIsYes()) {
+                                parameter.SetPathExchangeDir(options.ExchangeDirectory);
+                            }
+                        }
+
+                        // Check, ob Verzeichnis der Datenbank noch gleich ist
+                        if (error == false && string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
+                            // vollständiges Verzeichnis nicht gleich
+                            Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
+                            Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
+                            Console.WriteLine("Parameter: {0}", options.DatabaseDirectory);
+                            Console.WriteLine("Soll der Pfad zur Datenbank durch Parameter ersetzt werden (j/n)?");
+                            if (UserInputIsYes()) {
+                                parameter.SetDatabaseFile(options.DatabaseDirectory);
+                            }
+                        }
+
+                        // fertig
+                        if (error == false) {
+                            Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
+                        }
+                    } else if (error == false) {
+                        // Parameter neu erstellen
+                        parameter = new Parameter(options.DatabaseDirectory, options.CompleteDirectory, options.ExchangeDirectory, date_sync);
+                        Console.WriteLine("Keine Datenbank gefunden. Synchronisierungsvorgang wird anhand von Datumsänderungen gestartet. Bitte warten.");
+                    }
+
+                    if (error == false) {
                         // Parameter Exceptions neu laden
                         parameter.DirectoryExceptions.Clear();
                         foreach (string directory_exception in options.DirectoryExceptions) {
