@@ -27,7 +27,7 @@ namespace Diffsync
 
             [Option("FileExtensionExceptions", Separator = ';', Required = false, HelpText = "Auflistung von Dateiendungen, welche nicht synchronisiert werden sollen. Z.B. FileExtensionExceptions=\".exe\". Trennzeichen: \";\" Noch nicht unterstützt!")]
             public IEnumerable<string> FileExtensionExceptions { get; set; }
-            
+
             [Option("DateSync", Required = false, HelpText = "Einmalige Eingabe. Gibt den Startzeitpunkt der ersten Synchronsierung an. Z.B. DateSync=\"YYYY-MM-TT hh:mm\"")]
             public string DateSync { get; set; }
 
@@ -40,6 +40,7 @@ namespace Diffsync
 
             // initialisieren
             Parameter parameter = new Parameter();
+            XMLSerialization xml_serialization = new XMLSerialization();
 
             // Argumente verarbeiten
             bool error = false;
@@ -90,8 +91,11 @@ namespace Diffsync
                         DatabaseCreateBackup(options.DatabaseDirectory);
                         if (binary_format) {
                             // Extension dsdb = DiffSync Database Binary
+                            // aktualisieren zu dsdx
                             try {
                                 parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory);
+                                parameter.SetDatabaseFile(parameter.DatabaseFile.Replace(".dsdb", ".dsdx"));
+                                Console.WriteLine("Datenbank im alten Format eingelesen. Wird zu neuem Format konvertiert.");
                             } catch (Exception e) {
                                 Console.Error.WriteLine("Fehler beim Einlesen der binären Datenbank.");
                                 Console.Error.Write("{0}", e);
@@ -99,6 +103,7 @@ namespace Diffsync
                             }
                         } else {
                             // Extension dsdx = DiffSync Database Xml
+
                         }
 
                         // Check, ob Verzeichnisse noch gleich sind
@@ -124,7 +129,7 @@ namespace Diffsync
                         }
 
                         // Check, ob Verzeichnis der Datenbank noch gleich ist
-                        if (error == false && string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
+                        if (error == false && binary_format == false && string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
                             // vollständiges Verzeichnis nicht gleich
                             Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
                             Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
@@ -206,7 +211,7 @@ namespace Diffsync
 
             // Datenbank speichern und Datenbank-Backup löschen
             parameter.PrepareSaveToDatabase();
-            BinarySerialization.WriteToBinaryFile<Parameter>(parameter.DatabaseFile, parameter); // Extension = DiffSync DataBase
+            xml_serialization.SaveToXMLFile(parameter.DatabaseFile, ref parameter);
             TryToDeleteFile(String.Format("{0}.backup", parameter.DatabaseFile));
 
             // Filehook setzen
@@ -372,5 +377,84 @@ namespace Diffsync
                 return (T)binaryFormatter.Deserialize(stream);
             }
         }
+    }
+
+    class XMLSerialization
+    {
+        //public static void Main()
+        //{
+        //    // Read and write purchase orders.
+        //    XMLSerialization t = new XMLSerialization();
+        //    t.CreatePO("po.xml");
+        //    t.ReadPO("po.xml");
+        //}
+
+        public void SaveToXMLFile(string filename, ref Parameter parameter)
+        {
+            // Creates an instance of the XmlSerializer class;
+            // specifies the type of object to serialize.
+            XmlSerializer serializer = new XmlSerializer(typeof(Parameter));
+            TextWriter writer = new StreamWriter(filename);
+
+            serializer.Serialize(writer, parameter);
+            writer.Close();
+        }
+
+        //public static void ReadParameter(string filename, ref Parameter parameter)
+        //{
+        //    // Creates an instance of the XmlSerializer class;
+        //    // specifies the type of object to be deserialized.
+        //    XmlSerializer serializer = new XmlSerializer(typeof(Parameter));
+        //    // If the XML document has been altered with unknown
+        //    // nodes or attributes, handles them with the
+        //    // UnknownNode and UnknownAttribute events.
+        //    serializer.UnknownNode += new
+        //    XmlNodeEventHandler(serializer_UnknownNode);
+        //    serializer.UnknownAttribute += new
+        //    XmlAttributeEventHandler(serializer_UnknownAttribute);
+
+        //    // A FileStream is needed to read the XML document.
+        //    FileStream fs = new FileStream(filename, FileMode.Open);
+        //    // Declares an object variable of the type to be deserialized.
+        //    Parameter parameter;
+        //    // Uses the Deserialize method to restore the object's state
+        //    // with data from the XML document. */
+        //    parameter = (Parameter)serializer.Deserialize(fs);
+        //    // Reads the order date.
+        //    Console.WriteLine("OrderDate: " + po.OrderDate);
+
+        //    // Reads the shipping address.
+        //    Address shipTo = po.ShipTo;
+        //    ReadAddress(shipTo, "Ship To:");
+        //    // Reads the list of ordered items.
+        //    OrderedItem[] items = po.OrderedItems;
+        //    Console.WriteLine("Items to be shipped:");
+        //    foreach (OrderedItem oi in items) {
+        //        Console.WriteLine("\t" +
+        //        oi.ItemName + "\t" +
+        //        oi.Description + "\t" +
+        //        oi.UnitPrice + "\t" +
+        //        oi.Quantity + "\t" +
+        //        oi.LineTotal);
+        //    }
+        //    // Reads the subtotal, shipping cost, and total cost.
+        //    Console.WriteLine(
+        //    "\n\t\t\t\t\t Subtotal\t" + po.SubTotal +
+        //    "\n\t\t\t\t\t Shipping\t" + po.ShipCost +
+        //    "\n\t\t\t\t\t Total\t\t" + po.TotalCost
+        //    );
+        //}
+
+        //void serializer_UnknownNode(object sender, XmlNodeEventArgs e)
+        //{
+        //    Console.WriteLine("Unknown Node:" + e.Name + "\t" + e.Text);
+        //}
+
+        //void serializer_UnknownAttribute(object sender, XmlAttributeEventArgs e)
+        //{
+        //    System.Xml.XmlAttribute attr = e.Attr;
+        //    Console.WriteLine("Unknown attribute " +
+        //    attr.Name + "='" + attr.Value + "'");
+        //}
     }
 }
