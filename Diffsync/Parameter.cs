@@ -1,39 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Serialization;
 using System.IO;
+using System.Runtime.Serialization;
 using FileElementNamespace;
 
 namespace ParameterNamespace
 {
     [Serializable]
-    [XmlRoot("Parameter", IsNullable = true)]
+    [DataContract()]
     public class Parameter
     {
         // Variablen
-        [XmlAttribute]
+        [DataMember]
         string _path_complete_dir;
-        [XmlAttribute]
+        [DataMember]
         string _path_exchange_dir;
-        [XmlAttribute]
+        [DataMember]
         string _path_database_file;
-        [XmlAttribute]
+        [DataMember]
         string _file_hook;
-        [XmlAttribute]
+        [DataMember]
         DateTime _begin_from_sync;
-        [XmlArray]
+        [DataMember()]
         List<FileElement> _all_files_complete_dir = new List<FileElement>();
-        [XmlArray]
+        [DataMember()]
         List<FileElement> _all_files_exchange_dir = new List<FileElement>();
-        [XmlArray]
+        [DataMember()]
         List<FileElement> _all_files_database = new List<FileElement>();
-        [XmlArray]
+        [DataMember()]
         public List<string> DirectoryExceptions { get; set; }
-        [XmlArray]
+        [DataMember()]
         public List<string> FileExtensionExceptions { get; set; }
 
         // Methoden und Funktionen

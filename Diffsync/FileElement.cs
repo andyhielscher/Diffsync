@@ -1,30 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Xml;
-using System.Xml.Serialization;
 using System.IO;
+using System.Runtime.Serialization;
 
 namespace FileElementNamespace
 {
     [Serializable]
+    [DataContract()]
     public class FileElement
     {
         // Variablen
-        [XmlAttribute]
+        [DataMember]
         string _path;
-        [XmlAttribute]
+        [DataMember]
         double _size; // in Byte
-        [XmlAttribute]
+        [DataMember]
         DateTime _date_created;
-        [XmlAttribute]
+        [DataMember]
         DateTime _date_written;
-        [XmlAttribute]
+        [DataMember]
         int _root_directory_path_length;
-        [XmlAttribute]
+        [DataMember]
         bool _will_be_copied;
-        [XmlAttribute]
+        [DataMember]
         bool _will_be_deleted;
-        [XmlAttribute]
+        [DataMember]
         bool _from_complete_dir;
 
         // Methoden und Funktionen

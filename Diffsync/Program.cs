@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using FileElementNamespace;
 using ParameterNamespace;
+using System.Runtime.Serialization;
 using System.Xml;
-using System.Xml.Serialization;
 using System.IO;
 using CommandLine;
 
@@ -40,7 +41,6 @@ namespace Diffsync
 
             // initialisieren
             Parameter parameter = new Parameter();
-            XMLSerialization xml_serialization = new XMLSerialization();
 
             // Argumente verarbeiten
             bool error = false;
@@ -104,7 +104,7 @@ namespace Diffsync
                         } else {
                             // Extension dsdx = DiffSync Database Xml
                             try {
-                                parameter = xml_serialization.ReadParameter(options.DatabaseDirectory);
+                                parameter = DataContractSerialization.ReadParameter(options.DatabaseDirectory);
                             } catch (Exception e) {
                                 Console.Error.WriteLine("Fehler beim Einlesen der XML-Datenbank.");
                                 Console.Error.Write("{0}", e);
@@ -217,7 +217,7 @@ namespace Diffsync
 
             // Datenbank speichern und Datenbank-Backup löschen
             parameter.PrepareSaveToDatabase();
-            xml_serialization.WriteParameter(parameter.DatabaseFile, ref parameter);
+            DataContractSerialization.WriteParameter(parameter.DatabaseFile, ref parameter);
             TryToDeleteFile(String.Format("{0}.backup", parameter.DatabaseFile));
 
             // Filehook setzen
@@ -385,61 +385,54 @@ namespace Diffsync
         }
     }
 
-    class XMLSerialization
+    public sealed class DataContractSerialization
     {
-        //public static void Main()
-        //{
-        //    // Read and write purchase orders.
-        //    XMLSerialization t = new XMLSerialization();
-        //    t.CreatePO("po.xml");
-        //    t.ReadPO("po.xml");
-        //}
+        private DataContractSerialization() { }
 
-        public void WriteParameter(string filename, ref Parameter parameter)
+        public static void WriteParameter(string filename, ref Parameter parameter)
         {
-            // Creates an instance of the XmlSerializer class;
-            // specifies the type of object to serialize.
-            XmlSerializer serializer = new XmlSerializer(typeof(Parameter));
-            TextWriter writer = new StreamWriter(filename);
+            try {
+                FileStream writer = new FileStream(filename, FileMode.Create);
+                DataContractSerializer ser = new DataContractSerializer(typeof(Parameter));
+                ser.WriteObject(writer, parameter);
+                writer.Close();
 
-            serializer.Serialize(writer, parameter);
-            writer.Close();
+            } catch (SerializationException serExc) {
+                Console.WriteLine("Serialization Failed");
+                Console.WriteLine(serExc.Message);
+            } catch (Exception exc) {
+                Console.WriteLine(
+                "The serialization operation failed: {0} StackTrace: {1}",
+                exc.Message, exc.StackTrace);
+            }
         }
 
-        public Parameter ReadParameter(string filename)
+        public static Parameter ReadParameter(string filename)
         {
-            // Creates an instance of the XmlSerializer class;
-            // specifies the type of object to be deserialized.
-            XmlSerializer serializer = new XmlSerializer(typeof(Parameter));
-            // If the XML document has been altered with unknown
-            // nodes or attributes, handles them with the
-            // UnknownNode and UnknownAttribute events.
-            serializer.UnknownNode += new
-            XmlNodeEventHandler(SerializerUnknownNode);
-            serializer.UnknownAttribute += new
-            XmlAttributeEventHandler(SerializerUnknownAttribute);
+            try {
+                FileStream fs = new FileStream(filename, FileMode.Open);
+                XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(fs, new XmlDictionaryReaderQuotas());
+                DataContractSerializer ser = new DataContractSerializer(typeof(Parameter));
 
-            // A FileStream is needed to read the XML document.
-            FileStream fs = new FileStream(filename, FileMode.Open);
-            // Declares an object variable of the type to be deserialized.
-            Parameter parameter;
-            // Uses the Deserialize method to restore the object's state
-            // with data from the XML document. */
-            parameter = (Parameter)serializer.Deserialize(fs);
+                // Deserialize the data and read it from the instance.
+                Parameter parameter;
+                parameter = (Parameter)ser.ReadObject(reader, true);
+                reader.Close();
+                fs.Close();
+                return parameter;
 
-            return parameter;
-        }
-
-        void SerializerUnknownNode(object sender, XmlNodeEventArgs e)
-        {
-            Console.WriteLine("Unknown Node:" + e.Name + "\t" + e.Text);
-        }
-
-        void SerializerUnknownAttribute(object sender, XmlAttributeEventArgs e)
-        {
-            System.Xml.XmlAttribute attr = e.Attr;
-            Console.WriteLine("Unknown attribute " +
-            attr.Name + "='" + attr.Value + "'");
+            } catch (SerializationException serExc) {
+                Console.WriteLine("Serialization Failed");
+                Console.WriteLine(serExc.Message);
+                Parameter parameter = new Parameter();
+                return parameter;
+            } catch (Exception exc) {
+                Console.WriteLine(
+                "The serialization operation failed: {0} StackTrace: {1}",
+                exc.Message, exc.StackTrace);
+                Parameter parameter = new Parameter();
+                return parameter;
+            }
         }
     }
 }
