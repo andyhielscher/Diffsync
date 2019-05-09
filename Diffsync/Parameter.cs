@@ -11,18 +11,32 @@ using FileElementNamespace;
 namespace ParameterNamespace
 {
     [Serializable]
-    [XmlRoot("Parameter", Namespace = "http://www.cpandl.com", IsNullable = false)]
+    [XmlRoot("Parameter", IsNullable = true)]
     public class Parameter
     {
+        // Variablen
+        [XmlAttribute]
         string _path_complete_dir;
+        [XmlAttribute]
         string _path_exchange_dir;
+        [XmlAttribute]
         string _path_database_file;
+        [XmlAttribute]
         string _file_hook;
+        [XmlAttribute]
         DateTime _begin_from_sync;
+        [XmlArray]
         List<FileElement> _all_files_complete_dir = new List<FileElement>();
+        [XmlArray]
         List<FileElement> _all_files_exchange_dir = new List<FileElement>();
+        [XmlArray]
         List<FileElement> _all_files_database = new List<FileElement>();
+        [XmlArray]
+        public List<string> DirectoryExceptions { get; set; }
+        [XmlArray]
+        public List<string> FileExtensionExceptions { get; set; }
 
+        // Methoden und Funktionen
         public string PathCompleteDir
         {
             get {
@@ -35,8 +49,6 @@ namespace ParameterNamespace
                 return _path_exchange_dir;
             }
         }
-        public List<string> DirectoryExceptions { get; set; }
-        public List<string> FileExtensionExceptions { get; set; }
         public DateTime BeginSyncFrom
         {
             get {

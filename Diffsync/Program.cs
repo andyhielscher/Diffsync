@@ -13,7 +13,7 @@ namespace Diffsync
     {
         class Options
         {
-            [Option("DatabaseDirectory", Required = true, HelpText = "Pfad zum Verzeichnis der Datenbank. Falls Datenbank existiert, werden die anderen Angaben ignoriert und alle Eigenschaften aus der Datenbank eingelesen. Z.B. DatabaseDirectory=\"C:\\Users\\Name\\Documents\\Diffsync\\Sync Projekt xy.dsdx\"")]
+            [Option("DatabaseDirectory", Required = true, HelpText = "Pfad zum Verzeichnis der Datenbank. Z.B. DatabaseDirectory=\"C:\\Users\\Name\\Documents\\Diffsync\\Sync Projekt xy.dsdx\". Hinweis: Falls Datenbank existiert, wird die Angabe \"DateSync\" ignoriert und alle Eigenschaften aus der Datenbank eingelesen.")]
             public string DatabaseDirectory { get; set; }
 
             [Option("CompleteDirectory", Required = false, HelpText = "Pfad zum vollständigen Verzeichnis, welches synchronisiert werden soll. Z.B. CompleteDirectory=\"C:\\Users\\Name\\Documents\\vollständiges Verzeichnis\". Hinweis: Verzeichnis darf NICHT mit \"\\\" enden!")]
@@ -103,7 +103,13 @@ namespace Diffsync
                             }
                         } else {
                             // Extension dsdx = DiffSync Database Xml
-
+                            try {
+                                parameter = xml_serialization.ReadParameter(options.DatabaseDirectory);
+                            } catch (Exception e) {
+                                Console.Error.WriteLine("Fehler beim Einlesen der XML-Datenbank.");
+                                Console.Error.Write("{0}", e);
+                                error = true;
+                            }
                         }
 
                         // Check, ob Verzeichnisse noch gleich sind
@@ -211,7 +217,7 @@ namespace Diffsync
 
             // Datenbank speichern und Datenbank-Backup löschen
             parameter.PrepareSaveToDatabase();
-            xml_serialization.SaveToXMLFile(parameter.DatabaseFile, ref parameter);
+            xml_serialization.WriteParameter(parameter.DatabaseFile, ref parameter);
             TryToDeleteFile(String.Format("{0}.backup", parameter.DatabaseFile));
 
             // Filehook setzen
@@ -389,7 +395,7 @@ namespace Diffsync
         //    t.ReadPO("po.xml");
         //}
 
-        public void SaveToXMLFile(string filename, ref Parameter parameter)
+        public void WriteParameter(string filename, ref Parameter parameter)
         {
             // Creates an instance of the XmlSerializer class;
             // specifies the type of object to serialize.
@@ -400,61 +406,40 @@ namespace Diffsync
             writer.Close();
         }
 
-        //public static void ReadParameter(string filename, ref Parameter parameter)
-        //{
-        //    // Creates an instance of the XmlSerializer class;
-        //    // specifies the type of object to be deserialized.
-        //    XmlSerializer serializer = new XmlSerializer(typeof(Parameter));
-        //    // If the XML document has been altered with unknown
-        //    // nodes or attributes, handles them with the
-        //    // UnknownNode and UnknownAttribute events.
-        //    serializer.UnknownNode += new
-        //    XmlNodeEventHandler(serializer_UnknownNode);
-        //    serializer.UnknownAttribute += new
-        //    XmlAttributeEventHandler(serializer_UnknownAttribute);
+        public Parameter ReadParameter(string filename)
+        {
+            // Creates an instance of the XmlSerializer class;
+            // specifies the type of object to be deserialized.
+            XmlSerializer serializer = new XmlSerializer(typeof(Parameter));
+            // If the XML document has been altered with unknown
+            // nodes or attributes, handles them with the
+            // UnknownNode and UnknownAttribute events.
+            serializer.UnknownNode += new
+            XmlNodeEventHandler(SerializerUnknownNode);
+            serializer.UnknownAttribute += new
+            XmlAttributeEventHandler(SerializerUnknownAttribute);
 
-        //    // A FileStream is needed to read the XML document.
-        //    FileStream fs = new FileStream(filename, FileMode.Open);
-        //    // Declares an object variable of the type to be deserialized.
-        //    Parameter parameter;
-        //    // Uses the Deserialize method to restore the object's state
-        //    // with data from the XML document. */
-        //    parameter = (Parameter)serializer.Deserialize(fs);
-        //    // Reads the order date.
-        //    Console.WriteLine("OrderDate: " + po.OrderDate);
+            // A FileStream is needed to read the XML document.
+            FileStream fs = new FileStream(filename, FileMode.Open);
+            // Declares an object variable of the type to be deserialized.
+            Parameter parameter;
+            // Uses the Deserialize method to restore the object's state
+            // with data from the XML document. */
+            parameter = (Parameter)serializer.Deserialize(fs);
 
-        //    // Reads the shipping address.
-        //    Address shipTo = po.ShipTo;
-        //    ReadAddress(shipTo, "Ship To:");
-        //    // Reads the list of ordered items.
-        //    OrderedItem[] items = po.OrderedItems;
-        //    Console.WriteLine("Items to be shipped:");
-        //    foreach (OrderedItem oi in items) {
-        //        Console.WriteLine("\t" +
-        //        oi.ItemName + "\t" +
-        //        oi.Description + "\t" +
-        //        oi.UnitPrice + "\t" +
-        //        oi.Quantity + "\t" +
-        //        oi.LineTotal);
-        //    }
-        //    // Reads the subtotal, shipping cost, and total cost.
-        //    Console.WriteLine(
-        //    "\n\t\t\t\t\t Subtotal\t" + po.SubTotal +
-        //    "\n\t\t\t\t\t Shipping\t" + po.ShipCost +
-        //    "\n\t\t\t\t\t Total\t\t" + po.TotalCost
-        //    );
-        //}
+            return parameter;
+        }
 
-        //void serializer_UnknownNode(object sender, XmlNodeEventArgs e)
-        //{
-        //    Console.WriteLine("Unknown Node:" + e.Name + "\t" + e.Text);
-        //}
+        void SerializerUnknownNode(object sender, XmlNodeEventArgs e)
+        {
+            Console.WriteLine("Unknown Node:" + e.Name + "\t" + e.Text);
+        }
 
-        //void serializer_UnknownAttribute(object sender, XmlAttributeEventArgs e)
-        //{
-        //    System.Xml.XmlAttribute attr = e.Attr;
-        //    Console.WriteLine("Unknown attribute " +
-        //    attr.Name + "='" + attr.Value + "'");
-        //}
+        void SerializerUnknownAttribute(object sender, XmlAttributeEventArgs e)
+        {
+            System.Xml.XmlAttribute attr = e.Attr;
+            Console.WriteLine("Unknown attribute " +
+            attr.Name + "='" + attr.Value + "'");
+        }
     }
 }

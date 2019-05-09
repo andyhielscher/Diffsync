@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Xml;
+using System.Xml.Serialization;
 using System.IO;
 
 namespace FileElementNamespace
@@ -7,15 +9,25 @@ namespace FileElementNamespace
     [Serializable]
     public class FileElement
     {
+        // Variablen
+        [XmlAttribute]
         string _path;
+        [XmlAttribute]
         double _size; // in Byte
+        [XmlAttribute]
         DateTime _date_created;
+        [XmlAttribute]
         DateTime _date_written;
+        [XmlAttribute]
         int _root_directory_path_length;
+        [XmlAttribute]
         bool _will_be_copied;
+        [XmlAttribute]
         bool _will_be_deleted;
+        [XmlAttribute]
         bool _from_complete_dir;
 
+        // Methoden und Funktionen
         public string Path
         {
             get {
