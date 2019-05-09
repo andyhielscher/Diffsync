@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using System.Xml;
 using System.IO;
 using CommandLine;
+using System.IO.Compression;
 
 namespace Diffsync
 {
@@ -392,10 +393,21 @@ namespace Diffsync
         public static void WriteParameter(string filename, ref Parameter parameter)
         {
             try {
-                FileStream writer = new FileStream(filename, FileMode.Create);
-                DataContractSerializer ser = new DataContractSerializer(typeof(Parameter));
-                ser.WriteObject(writer, parameter);
-                writer.Close();
+                MemoryStream ms = new MemoryStream();
+                DataContractSerializer dcs = new DataContractSerializer(typeof(Parameter));
+                dcs.WriteObject(ms, parameter);
+                
+                using (FileStream zip_file = new FileStream(filename, FileMode.Create)) {
+                    using (ZipArchive archive = new ZipArchive(zip_file, ZipArchiveMode.Create)) {
+                        ZipArchiveEntry database = archive.CreateEntry("diffsyncdatabase.xml", CompressionLevel.Optimal);
+                        using (BinaryWriter writer = new BinaryWriter(database.Open())) {
+                            // Position zum Schreiben auf 0 setzen
+                            ms.Position = 0;
+                            writer.Write(ms.ToArray());
+                        }
+                    }
+                }
+                ms.Close();
 
             } catch (SerializationException serExc) {
                 Console.WriteLine("Serialization Failed");
@@ -410,15 +422,25 @@ namespace Diffsync
         public static Parameter ReadParameter(string filename)
         {
             try {
-                FileStream fs = new FileStream(filename, FileMode.Open);
-                XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(fs, new XmlDictionaryReaderQuotas());
+                MemoryStream ms = new MemoryStream();
+                using (ZipArchive archive = ZipFile.OpenRead(filename)) {
+                    foreach (ZipArchiveEntry database in archive.Entries) {
+                        if (string.Compare(database.FullName, "diffsyncdatabase.xml") == 0) {
+                            Stream unzipped_database_stream = database.Open();
+                            unzipped_database_stream.CopyTo(ms);
+                            // Position zum Lesen auf 0 setzen
+                            ms.Position = 0;
+                        }
+                    }
+                }
+                XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, new XmlDictionaryReaderQuotas());
                 DataContractSerializer ser = new DataContractSerializer(typeof(Parameter));
 
                 // Deserialize the data and read it from the instance.
                 Parameter parameter;
                 parameter = (Parameter)ser.ReadObject(reader, true);
                 reader.Close();
-                fs.Close();
+                ms.Close();
                 return parameter;
 
             } catch (SerializationException serExc) {
