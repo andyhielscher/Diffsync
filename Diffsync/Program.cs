@@ -105,7 +105,7 @@ namespace Diffsync
                         } else {
                             // Extension dsdx = DiffSync Database Xml
                             try {
-                                parameter = DataContractSerialization.ReadParameter(options.DatabaseDirectory);
+                                parameter = ArchivedDataContractSerialization.ReadParameter(options.DatabaseDirectory);
                             } catch (Exception e) {
                                 Console.Error.WriteLine("Fehler beim Einlesen der XML-Datenbank.");
                                 Console.Error.Write("{0}", e);
@@ -218,7 +218,7 @@ namespace Diffsync
 
             // Datenbank speichern und Datenbank-Backup löschen
             parameter.PrepareSaveToDatabase();
-            DataContractSerialization.WriteParameter(parameter.DatabaseFile, ref parameter);
+            ArchivedDataContractSerialization.WriteParameter(parameter.DatabaseFile, ref parameter);
             TryToDeleteFile(String.Format("{0}.backup", parameter.DatabaseFile));
 
             // Filehook setzen
@@ -386,9 +386,9 @@ namespace Diffsync
         }
     }
 
-    public sealed class DataContractSerialization
+    public sealed class ArchivedDataContractSerialization
     {
-        private DataContractSerialization() { }
+        private ArchivedDataContractSerialization() { }
 
         public static void WriteParameter(string filename, ref Parameter parameter)
         {
@@ -400,7 +400,7 @@ namespace Diffsync
                 using (FileStream zip_file = new FileStream(filename, FileMode.Create)) {
                     using (ZipArchive archive = new ZipArchive(zip_file, ZipArchiveMode.Create)) {
                         ZipArchiveEntry database = archive.CreateEntry("diffsyncdatabase.xml", CompressionLevel.Optimal);
-                        using (BinaryWriter writer = new BinaryWriter(database.Open())) {
+                        using (BinaryWriter writer = new BinaryWriter(database.Open())) { // new BinaryWriter(database.Open(), encoding: System.Text.Encoding.UTF8) --> UTF8 ist standard-enconding (https://docs.microsoft.com/de-de/dotnet/api/system.io.binarywriter?view=netframework-4.8)
                             // Position zum Schreiben auf 0 setzen
                             ms.Position = 0;
                             writer.Write(ms.ToArray());
@@ -433,7 +433,7 @@ namespace Diffsync
                         }
                     }
                 }
-                XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, new XmlDictionaryReaderQuotas());
+                XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, new XmlDictionaryReaderQuotas()); // leider kann ich das Standard-Encoding nicht finden
                 DataContractSerializer ser = new DataContractSerializer(typeof(Parameter));
 
                 // Deserialize the data and read it from the instance.
