@@ -96,6 +96,7 @@ namespace Diffsync
                             try {
                                 parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory);
                                 parameter.SetDatabaseFile(parameter.DatabaseFile.Replace(".dsdb", ".dsdx"));
+                                options.DatabaseDirectory = options.DatabaseDirectory.Replace(".dsdb", ".dsdx"); // zum Vergleich der Pfade
                                 Console.WriteLine("Datenbank im alten Format eingelesen. Wird zu neuem Format konvertiert.");
                             } catch (Exception e) {
                                 Console.Error.WriteLine("Fehler beim Einlesen der binären Datenbank.");
@@ -136,7 +137,7 @@ namespace Diffsync
                         }
 
                         // Check, ob Verzeichnis der Datenbank noch gleich ist
-                        if (error == false && binary_format == false && string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
+                        if (error == false && string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
                             // vollständiges Verzeichnis nicht gleich
                             Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
                             Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
