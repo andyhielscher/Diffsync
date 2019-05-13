@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using FileElementNamespace;
 using ParameterNamespace;
+using System.Runtime.Serialization;
+using System.Xml;
 using System.IO;
 using CommandLine;
+using System.IO.Compression;
 
 namespace Diffsync
 {
@@ -11,7 +15,7 @@ namespace Diffsync
     {
         class Options
         {
-            [Option("DatabaseDirectory", Required = true, HelpText = "Pfad zum Verzeichnis der Datenbank. Falls Datenbank existiert, werden die anderen Angaben ignoriert und alle Eigenschaften aus der Datenbank eingelesen. Z.B. DatabaseDirectory=\"C:\\Users\\Name\\Documents\\Diffsync\\Sync Projekt xy.dsdb\"")]
+            [Option("DatabaseDirectory", Required = true, HelpText = "Pfad zum Verzeichnis der Datenbank. Z.B. DatabaseDirectory=\"C:\\Users\\Name\\Documents\\Diffsync\\Sync Projekt xy.dsdx\". Hinweis: Falls Datenbank existiert, wird die Angabe \"DateSync\" ignoriert und alle Eigenschaften aus der Datenbank eingelesen.")]
             public string DatabaseDirectory { get; set; }
 
             [Option("CompleteDirectory", Required = false, HelpText = "Pfad zum vollständigen Verzeichnis, welches synchronisiert werden soll. Z.B. CompleteDirectory=\"C:\\Users\\Name\\Documents\\vollständiges Verzeichnis\". Hinweis: Verzeichnis darf NICHT mit \"\\\" enden!")]
@@ -20,12 +24,12 @@ namespace Diffsync
             [Option("ExchangeDirectory", Required = false, HelpText = "Pfad zum Austausch-Verzeichnis, welches die Änderungen des anderen PCs enthält. Z.B. ExchangeDirectory=\"C:\\Users\\Name\\Documents\\Austausch-Verzeichnis\". Hinweis: Verzeichnis darf NICHT mit \"\\\" enden!")]
             public string ExchangeDirectory { get; set; }
 
-            [Option("DirectoryExceptions", Separator = ';', Required = false, HelpText = "Auflistung von (verschachtelten) Verzeichnissen, welche nicht synchronisiert werden sollen. Z.B. DirectoryExceptions=\"\\Erstes Verzeichnis\";\\Test\\Test\". Trennzeichen: \";\"")]
+            [Option("DirectoryExceptions", Separator = ';', Required = false, HelpText = "Auflistung von (verschachtelten) Verzeichnissen, welche nicht synchronisiert werden sollen. Z.B. DirectoryExceptions=\"\\Erstes Verzeichnis;\\Test\\Test\". Trennzeichen: \";\"")]
             public IEnumerable<string> DirectoryExceptions { get; set; }
 
             [Option("FileExtensionExceptions", Separator = ';', Required = false, HelpText = "Auflistung von Dateiendungen, welche nicht synchronisiert werden sollen. Z.B. FileExtensionExceptions=\".exe\". Trennzeichen: \";\" Noch nicht unterstützt!")]
             public IEnumerable<string> FileExtensionExceptions { get; set; }
-            
+
             [Option("DateSync", Required = false, HelpText = "Einmalige Eingabe. Gibt den Startzeitpunkt der ersten Synchronsierung an. Z.B. DateSync=\"YYYY-MM-TT hh:mm\"")]
             public string DateSync { get; set; }
 
@@ -41,11 +45,15 @@ namespace Diffsync
 
             // Argumente verarbeiten
             bool error = false;
+            bool binary_format = false;
             var result = Parser.Default.ParseArguments<Options>(args)
                 .WithParsed<Options>(options => {
                     // verschiedene Checks der Argumente
-                    if (options.DatabaseDirectory.EndsWith(".dsdb") == false) {
-                        Console.Error.WriteLine("Falsche Dateiendung der Datenbank. Datenbank muss auf \".dsdb\" enden.");
+                    if (options.DatabaseDirectory.EndsWith(".dsdb") == true) {
+                        // alte binäre Datenbank, wird ggf eingelesen und dann konvertiert
+                        binary_format = true;
+                    } else if (options.DatabaseDirectory.EndsWith(".dsdx") == false) {
+                        Console.Error.WriteLine("Falsche Dateiendung der Datenbank. Datenbank muss auf \".dsdx\" enden.");
                         error = true;
                     }
                     if (Directory.Exists(options.CompleteDirectory) == false) {
@@ -77,56 +85,80 @@ namespace Diffsync
                         }
                     }
 
-                    if (error == false) {
-                        // Datenbank auf Existenz prüfen
-                        FileInfo file = new FileInfo(options.DatabaseDirectory);
-                        if (file.Exists) {
-                            // Datenbank Backup erstellen und dann laden
-                            DatabaseCreateBackup(options.DatabaseDirectory);
-                            parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory); // Extension dsdb = DiffSync DataBase
-
-                            // Check, ob Verzeichnisse noch gleich sind
-                            if (string.Compare(parameter.PathCompleteDir.TrimEnd('\\'), options.CompleteDirectory, true) != 0) {
-                                // vollständiges Verzeichnis nicht gleich
-                                Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
-                                Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
-                                Console.WriteLine("Parameter: {0}", options.CompleteDirectory);
-                                Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
-                                if (UserInputIsYes()) {
-                                    parameter.SetPathCompleteDir(options.CompleteDirectory);
-                                }
+                    // Datenbank auf Existenz prüfen
+                    FileInfo file = new FileInfo(options.DatabaseDirectory);
+                    if (error == false && file.Exists) {
+                        // Datenbank Backup erstellen und dann laden
+                        DatabaseCreateBackup(options.DatabaseDirectory);
+                        if (binary_format) {
+                            // Extension dsdb = DiffSync Database Binary
+                            // aktualisieren zu dsdx
+                            try {
+                                parameter = BinarySerialization.ReadFromBinaryFile<Parameter>(options.DatabaseDirectory);
+                                parameter.SetDatabaseFile(parameter.DatabaseFile.Replace(".dsdb", ".dsdx"));
+                                options.DatabaseDirectory = options.DatabaseDirectory.Replace(".dsdb", ".dsdx"); // zum Vergleich der Pfade
+                                Console.WriteLine("Datenbank im alten Format eingelesen. Wird zu neuem Format konvertiert.");
+                            } catch (Exception e) {
+                                Console.Error.WriteLine("Fehler beim Einlesen der binären Datenbank.");
+                                Console.Error.Write("{0}", e);
+                                error = true;
                             }
-                            if (string.Compare(parameter.PathExchangeDir.TrimEnd('\\'), options.ExchangeDirectory, true) != 0) {
-                                // vollständiges Verzeichnis nicht gleich
-                                Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
-                                Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
-                                Console.WriteLine("Parameter: {0}", options.ExchangeDirectory);
-                                Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
-                                if (UserInputIsYes()) {
-                                    parameter.SetPathExchangeDir(options.ExchangeDirectory);
-                                }
-                            }
-
-                            // Check, ob Verzeichnis der Datenbank noch gleich ist
-                            if (string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
-                                // vollständiges Verzeichnis nicht gleich
-                                Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
-                                Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
-                                Console.WriteLine("Parameter: {0}", options.DatabaseDirectory);
-                                Console.WriteLine("Soll der Pfad zur Datenbank durch Parameter ersetzt werden (j/n)?");
-                                if (UserInputIsYes()) {
-                                    parameter.SetDatabaseFile(options.DatabaseDirectory);
-                                }
-                            }
-
-                            // fertig
-                            Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
                         } else {
-                            // Parameter neu erstellen
-                            parameter = new Parameter(options.DatabaseDirectory, options.CompleteDirectory, options.ExchangeDirectory, date_sync);
-                            Console.WriteLine("Keine Datenbank gefunden. Synchronisierungsvorgang wird anhand von Datumsänderungen gestartet. Bitte warten.");
+                            // Extension dsdx = DiffSync Database Xml
+                            try {
+                                parameter = ArchivedDataContractSerialization.ReadParameter(options.DatabaseDirectory);
+                            } catch (Exception e) {
+                                Console.Error.WriteLine("Fehler beim Einlesen der XML-Datenbank.");
+                                Console.Error.Write("{0}", e);
+                                error = true;
+                            }
                         }
 
+                        // Check, ob Verzeichnisse noch gleich sind
+                        if (error == false && string.Compare(parameter.PathCompleteDir.TrimEnd('\\'), options.CompleteDirectory, true) != 0) {
+                            // vollständiges Verzeichnis nicht gleich
+                            Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                            Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
+                            Console.WriteLine("Parameter: {0}", options.CompleteDirectory);
+                            Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
+                            if (UserInputIsYes()) {
+                                parameter.SetPathCompleteDir(options.CompleteDirectory);
+                            }
+                        }
+                        if (error == false && string.Compare(parameter.PathExchangeDir.TrimEnd('\\'), options.ExchangeDirectory, true) != 0) {
+                            // vollständiges Verzeichnis nicht gleich
+                            Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                            Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
+                            Console.WriteLine("Parameter: {0}", options.ExchangeDirectory);
+                            Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
+                            if (UserInputIsYes()) {
+                                parameter.SetPathExchangeDir(options.ExchangeDirectory);
+                            }
+                        }
+
+                        // Check, ob Verzeichnis der Datenbank noch gleich ist
+                        if (error == false && string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
+                            // vollständiges Verzeichnis nicht gleich
+                            Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
+                            Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
+                            Console.WriteLine("Parameter: {0}", options.DatabaseDirectory);
+                            Console.WriteLine("Soll der Pfad zur Datenbank durch Parameter ersetzt werden (j/n)?");
+                            if (UserInputIsYes()) {
+                                parameter.SetDatabaseFile(options.DatabaseDirectory);
+                            }
+                        }
+
+                        // fertig
+                        if (error == false) {
+                            Console.WriteLine("Datenbank geladen. Synchronisierungsvorgang wird gestartet. Bitte warten.");
+                        }
+                    } else if (error == false) {
+                        // Parameter neu erstellen
+                        parameter = new Parameter(options.DatabaseDirectory, options.CompleteDirectory, options.ExchangeDirectory, date_sync);
+                        Console.WriteLine("Keine Datenbank gefunden. Synchronisierungsvorgang wird anhand von Datumsänderungen gestartet. Bitte warten.");
+                    }
+
+                    if (error == false) {
                         // Parameter Exceptions neu laden
                         parameter.DirectoryExceptions.Clear();
                         foreach (string directory_exception in options.DirectoryExceptions) {
@@ -187,7 +219,7 @@ namespace Diffsync
 
             // Datenbank speichern und Datenbank-Backup löschen
             parameter.PrepareSaveToDatabase();
-            BinarySerialization.WriteToBinaryFile<Parameter>(parameter.DatabaseFile, parameter); // Extension = DiffSync DataBase
+            ArchivedDataContractSerialization.WriteParameter(parameter.DatabaseFile, ref parameter);
             TryToDeleteFile(String.Format("{0}.backup", parameter.DatabaseFile));
 
             // Filehook setzen
@@ -351,6 +383,78 @@ namespace Diffsync
             using (Stream stream = File.Open(filePath, FileMode.Open)) {
                 var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
                 return (T)binaryFormatter.Deserialize(stream);
+            }
+        }
+    }
+
+    public sealed class ArchivedDataContractSerialization
+    {
+        private ArchivedDataContractSerialization() { }
+
+        public static void WriteParameter(string filename, ref Parameter parameter)
+        {
+            try {
+                MemoryStream ms = new MemoryStream();
+                DataContractSerializer dcs = new DataContractSerializer(typeof(Parameter));
+                dcs.WriteObject(ms, parameter);
+                
+                using (FileStream zip_file = new FileStream(filename, FileMode.Create)) {
+                    using (ZipArchive archive = new ZipArchive(zip_file, ZipArchiveMode.Create)) {
+                        ZipArchiveEntry database = archive.CreateEntry("diffsyncdatabase.xml", CompressionLevel.Optimal);
+                        using (BinaryWriter writer = new BinaryWriter(database.Open())) { // new BinaryWriter(database.Open(), encoding: System.Text.Encoding.UTF8) --> UTF8 ist standard-enconding (https://docs.microsoft.com/de-de/dotnet/api/system.io.binarywriter?view=netframework-4.8)
+                            // Position zum Schreiben auf 0 setzen
+                            ms.Position = 0;
+                            writer.Write(ms.ToArray());
+                        }
+                    }
+                }
+                ms.Close();
+
+            } catch (SerializationException serExc) {
+                Console.WriteLine("Serialization Failed");
+                Console.WriteLine(serExc.Message);
+            } catch (Exception exc) {
+                Console.WriteLine(
+                "The serialization operation failed: {0} StackTrace: {1}",
+                exc.Message, exc.StackTrace);
+            }
+        }
+
+        public static Parameter ReadParameter(string filename)
+        {
+            try {
+                MemoryStream ms = new MemoryStream();
+                using (ZipArchive archive = ZipFile.OpenRead(filename)) {
+                    foreach (ZipArchiveEntry database in archive.Entries) {
+                        if (string.Compare(database.FullName, "diffsyncdatabase.xml") == 0) {
+                            Stream unzipped_database_stream = database.Open();
+                            unzipped_database_stream.CopyTo(ms);
+                            // Position zum Lesen auf 0 setzen
+                            ms.Position = 0;
+                        }
+                    }
+                }
+                XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, new XmlDictionaryReaderQuotas()); // leider kann ich das Standard-Encoding nicht finden
+                DataContractSerializer ser = new DataContractSerializer(typeof(Parameter));
+
+                // Deserialize the data and read it from the instance.
+                Parameter parameter;
+                parameter = (Parameter)ser.ReadObject(reader, true);
+                reader.Close();
+                ms.Close();
+                return parameter;
+
+            } catch (SerializationException serExc) {
+                Console.WriteLine("Serialization Failed");
+                Console.WriteLine(serExc.Message);
+                Parameter parameter = new Parameter();
+                return parameter;
+            } catch (Exception exc) {
+                Console.WriteLine(
+                "The serialization operation failed: {0} StackTrace: {1}",
+                exc.Message, exc.StackTrace);
+                Parameter parameter = new Parameter();
+                return parameter;
             }
         }
     }

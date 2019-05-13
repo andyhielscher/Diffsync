@@ -1,25 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
+using System.Runtime.Serialization;
 using FileElementNamespace;
 
 namespace ParameterNamespace
 {
     [Serializable]
+    [DataContract()]
     public class Parameter
     {
+        // Variablen
+        [DataMember]
         string _path_complete_dir;
+        [DataMember]
         string _path_exchange_dir;
+        [DataMember]
         string _path_database_file;
+        [DataMember]
         string _file_hook;
+        [DataMember]
         DateTime _begin_from_sync;
+        [DataMember()]
         List<FileElement> _all_files_complete_dir = new List<FileElement>();
+        [DataMember()]
         List<FileElement> _all_files_exchange_dir = new List<FileElement>();
+        [DataMember()]
         List<FileElement> _all_files_database = new List<FileElement>();
+        [DataMember()]
+        public List<string> DirectoryExceptions { get; set; }
+        [DataMember()]
+        public List<string> FileExtensionExceptions { get; set; }
 
+        // Methoden und Funktionen
         public string PathCompleteDir
         {
             get {
@@ -32,8 +46,6 @@ namespace ParameterNamespace
                 return _path_exchange_dir;
             }
         }
-        public List<string> DirectoryExceptions { get; set; }
-        public List<string> FileExtensionExceptions { get; set; }
         public DateTime BeginSyncFrom
         {
             get {

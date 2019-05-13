@@ -1,21 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
 
 namespace FileElementNamespace
 {
     [Serializable]
+    [DataContract()]
     public class FileElement
     {
+        // Variablen
+        [DataMember]
         string _path;
+        [DataMember]
         double _size; // in Byte
+        [DataMember]
         DateTime _date_created;
+        [DataMember]
         DateTime _date_written;
+        [DataMember]
         int _root_directory_path_length;
+        [DataMember]
         bool _will_be_copied;
+        [DataMember]
         bool _will_be_deleted;
+        [DataMember]
         bool _from_complete_dir;
 
+        // Methoden und Funktionen
         public string Path
         {
             get {
