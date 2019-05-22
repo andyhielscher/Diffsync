@@ -204,10 +204,11 @@ namespace Diffsync
             Console.WriteLine("");
             Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
             if (UserInputIsYes() == false) {
-                Console.WriteLine("Programm wird beendet. Bitte Enter drücken.");
+                Console.WriteLine("Programm wird beendet. Datenbank wurde nicht aktualisiert. Bitte Enter drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
             } else {
+                Console.WriteLine("");
                 Console.WriteLine("Kopiervorgang wird gestartet. Bitte warten.");
             }
 
@@ -295,10 +296,26 @@ namespace Diffsync
             string destination_path,
                 source_path;
             FileInfo file;
+            int idx_file = 0;
+            int progress,
+                previous_progress = 0,
+                progress_length = 179;
+
+            // Fortschritt
+            Console.WriteLine("");
+            Console.WriteLine("Fortschritt:");
 
             DirectoryCheckExistsAndCreate(exchange_dir);
 
             foreach (FileElement file_element in files_to_sync) {
+                // Fortschritt
+                progress = (int)Math.Floor((double)idx_file / (double)files_to_sync.Count * (double)progress_length);
+                while (progress - previous_progress > 0) {
+                    Console.Write("#");
+                    previous_progress++;
+                }
+                idx_file++;
+                // Kopiervorgang
                 if (file_element.WillBeDeleted == false) {
                     if (file_element.FromCompleteDir == true) {
                         destination_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
@@ -337,6 +354,12 @@ namespace Diffsync
                 }
             }
 
+            // Fortschritt
+            while (progress_length - previous_progress > 0) {
+                Console.Write("#");
+                previous_progress++;
+            }
+            Console.WriteLine("");
             Console.WriteLine("Kopiervorgang erfolgreich.");
         }
 
