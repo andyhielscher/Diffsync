@@ -37,7 +37,7 @@ namespace Diffsync
         static void Main(string[] args)
         {
             // Console: Breite und gespeicherte Anzahl Zeilen einstellen
-            Console.WindowWidth = 180;
+            Console.WindowWidth = 185;
             Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
             // initialisieren
