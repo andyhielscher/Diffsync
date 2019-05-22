@@ -37,7 +37,7 @@ namespace Diffsync
         static void Main(string[] args)
         {
             // Console: Breite und gespeicherte Anzahl Zeilen einstellen
-            Console.WindowWidth = 180;
+            Console.WindowWidth = 185;
             Console.BufferHeight = 10000; // TO-DO: Wie kann man die gespeicherte Anzahl Zeilen erhöhen? Damit kann dann die Liste der zu kopierenden Dateien durchgescrollt werden...
 
             // initialisieren
@@ -117,9 +117,9 @@ namespace Diffsync
                         // Check, ob Verzeichnisse noch gleich sind
                         if (error == false && string.Compare(parameter.PathCompleteDir.TrimEnd('\\'), options.CompleteDirectory, true) != 0) {
                             // vollständiges Verzeichnis nicht gleich
-                            Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                            Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Argument angegebenen Verzeichnis.");
                             Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
-                            Console.WriteLine("Parameter: {0}", options.CompleteDirectory);
+                            Console.WriteLine("Argument: {0}", options.CompleteDirectory);
                             Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
                             if (UserInputIsYes()) {
                                 parameter.SetPathCompleteDir(options.CompleteDirectory);
@@ -127,9 +127,9 @@ namespace Diffsync
                         }
                         if (error == false && string.Compare(parameter.PathExchangeDir.TrimEnd('\\'), options.ExchangeDirectory, true) != 0) {
                             // vollständiges Verzeichnis nicht gleich
-                            Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                            Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Argument angegebenen Verzeichnis.");
                             Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
-                            Console.WriteLine("Parameter: {0}", options.ExchangeDirectory);
+                            Console.WriteLine("Argument: {0}", options.ExchangeDirectory);
                             Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
                             if (UserInputIsYes()) {
                                 parameter.SetPathExchangeDir(options.ExchangeDirectory);
@@ -139,10 +139,10 @@ namespace Diffsync
                         // Check, ob Verzeichnis der Datenbank noch gleich ist
                         if (error == false && string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
                             // vollständiges Verzeichnis nicht gleich
-                            Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
+                            Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Argument angegebenen Datei.");
                             Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
-                            Console.WriteLine("Parameter: {0}", options.DatabaseDirectory);
-                            Console.WriteLine("Soll der Pfad zur Datenbank durch Parameter ersetzt werden (j/n)?");
+                            Console.WriteLine("Argument: {0}", options.DatabaseDirectory);
+                            Console.WriteLine("Soll der Pfad zur Datenbank durch Argument ersetzt werden (j/n)?");
                             if (UserInputIsYes()) {
                                 parameter.SetDatabaseFile(options.DatabaseDirectory);
                             }
@@ -204,10 +204,11 @@ namespace Diffsync
             Console.WriteLine("");
             Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
             if (UserInputIsYes() == false) {
-                Console.WriteLine("Programm wird beendet. Bitte Enter drücken.");
+                Console.WriteLine("Programm wird beendet. Datenbank wurde nicht aktualisiert. Bitte Enter drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
             } else {
+                Console.WriteLine("");
                 Console.WriteLine("Kopiervorgang wird gestartet. Bitte warten.");
             }
 
@@ -295,10 +296,26 @@ namespace Diffsync
             string destination_path,
                 source_path;
             FileInfo file;
+            int idx_file = 0;
+            int progress,
+                previous_progress = 0,
+                progress_length = 179;
+
+            // Fortschritt
+            Console.WriteLine("");
+            Console.WriteLine("Fortschritt:");
 
             DirectoryCheckExistsAndCreate(exchange_dir);
 
             foreach (FileElement file_element in files_to_sync) {
+                // Fortschritt
+                progress = (int)Math.Floor((double)idx_file / (double)files_to_sync.Count * (double)progress_length);
+                while (progress - previous_progress > 0) {
+                    Console.Write("#");
+                    previous_progress++;
+                }
+                idx_file++;
+                // Kopiervorgang
                 if (file_element.WillBeDeleted == false) {
                     if (file_element.FromCompleteDir == true) {
                         destination_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
@@ -337,6 +354,12 @@ namespace Diffsync
                 }
             }
 
+            // Fortschritt
+            while (progress_length - previous_progress > 0) {
+                Console.Write("#");
+                previous_progress++;
+            }
+            Console.WriteLine("");
             Console.WriteLine("Kopiervorgang erfolgreich.");
         }
 
