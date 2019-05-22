@@ -117,9 +117,9 @@ namespace Diffsync
                         // Check, ob Verzeichnisse noch gleich sind
                         if (error == false && string.Compare(parameter.PathCompleteDir.TrimEnd('\\'), options.CompleteDirectory, true) != 0) {
                             // vollständiges Verzeichnis nicht gleich
-                            Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                            Console.WriteLine("Das vollständige Verzeichnis in der Datenbank entspricht nicht dem als Argument angegebenen Verzeichnis.");
                             Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
-                            Console.WriteLine("Parameter: {0}", options.CompleteDirectory);
+                            Console.WriteLine("Argument: {0}", options.CompleteDirectory);
                             Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
                             if (UserInputIsYes()) {
                                 parameter.SetPathCompleteDir(options.CompleteDirectory);
@@ -127,9 +127,9 @@ namespace Diffsync
                         }
                         if (error == false && string.Compare(parameter.PathExchangeDir.TrimEnd('\\'), options.ExchangeDirectory, true) != 0) {
                             // vollständiges Verzeichnis nicht gleich
-                            Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Parameter angegebenen Verzeichnis.");
+                            Console.WriteLine("Das Austausch-Verzeichnis in der Datenbank entspricht nicht dem als Argument angegebenen Verzeichnis.");
                             Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
-                            Console.WriteLine("Parameter: {0}", options.ExchangeDirectory);
+                            Console.WriteLine("Argument: {0}", options.ExchangeDirectory);
                             Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
                             if (UserInputIsYes()) {
                                 parameter.SetPathExchangeDir(options.ExchangeDirectory);
@@ -139,10 +139,10 @@ namespace Diffsync
                         // Check, ob Verzeichnis der Datenbank noch gleich ist
                         if (error == false && string.Compare(parameter.DatabaseFile, options.DatabaseDirectory, true) != 0) {
                             // vollständiges Verzeichnis nicht gleich
-                            Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Parameter angegebenen Datei.");
+                            Console.WriteLine("Die Datenbank-Datei entspricht nicht der als Argument angegebenen Datei.");
                             Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
-                            Console.WriteLine("Parameter: {0}", options.DatabaseDirectory);
-                            Console.WriteLine("Soll der Pfad zur Datenbank durch Parameter ersetzt werden (j/n)?");
+                            Console.WriteLine("Argument: {0}", options.DatabaseDirectory);
+                            Console.WriteLine("Soll der Pfad zur Datenbank durch Argument ersetzt werden (j/n)?");
                             if (UserInputIsYes()) {
                                 parameter.SetDatabaseFile(options.DatabaseDirectory);
                             }
