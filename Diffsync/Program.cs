@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FileElementNamespace;
 using ParameterNamespace;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Xml;
 using System.IO;
 using CommandLine;
@@ -343,7 +344,19 @@ namespace Diffsync
                     if (file_element.FromCompleteDir == true) {
                         // Datei ist im vollständigen Verzeichnis nicht mehr vorhanden, folglich im Austausch-Verzeichnis als zu löschen markieren
                         file = new FileInfo(String.Format("{0}{1}.dsdel", exchange_dir, file_element.RelativePath));
-                        file.Create();
+                        try {
+                            // Check if file already exists. If yes, delete it.     
+                            if (file.Exists) {
+                                file.Delete();
+                            }
+                            // Create a new file     
+                            using (FileStream fs = file.Create()) {
+                                Byte[] txt = new UTF8Encoding(true).GetBytes(String.Format("Delete this file: {0}{1}", exchange_dir, file_element.RelativePath));
+                                fs.Write(txt, 0, txt.Length);
+                            }
+                        } catch (Exception Ex) {
+                            Console.WriteLine(Ex.ToString());
+                        }
                     } else {
                         // "Markierung" im Austausch-Verzeichnis löschen und im vollständigen Verzeichnis richtige Datei löschen
                         destination_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath.Substring(0, file_element.RelativePath.Length - 6)); // Endung ".dsdel" wird abgeschnitten
