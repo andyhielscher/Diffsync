@@ -345,10 +345,8 @@ namespace Diffsync
                         // Datei ist im vollständigen Verzeichnis nicht mehr vorhanden, folglich im Austausch-Verzeichnis als zu löschen markieren
                         file = new FileInfo(String.Format("{0}{1}.dsdel", exchange_dir, file_element.RelativePath));
                         try {
-                            // Check if file already exists. If yes, delete it.     
-                            if (file.Exists) {
-                                file.Delete();
-                            }
+                            // Create Directory first (recursively!)
+                            DirectoryCheckExistsAndCreate(file.DirectoryName);
                             // Create a new file     
                             using (FileStream fs = file.Create()) {
                                 Byte[] txt = new UTF8Encoding(true).GetBytes(String.Format("Delete this file: {0}{1}", exchange_dir, file_element.RelativePath));
