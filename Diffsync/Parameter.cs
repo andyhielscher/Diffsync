@@ -140,14 +140,23 @@ namespace ParameterNamespace
 
         void GetDirectoryFiles(string directory, ref List<FileElement> file_elements, int root_directory_path_length, bool complete_dir)
         {
-            // To-Do Filter für verschiedene Dateiendungen einbauen
             string[] files = Directory.GetFiles(directory);
 
             SortStringsAscending(files);
 
             foreach (string file in files) {
-                FileElement file_element = new FileElement(file, root_directory_path_length, complete_dir);
-                file_elements.Add(file_element);
+                bool usable = true;
+                FileInfo file_info = new FileInfo(file);
+                foreach (string file_extension_exception in this.FileExtensionExceptions) {
+                    if (file_info.Extension.ToLower() == file_extension_exception) {
+                        usable = false;
+                        break;
+                    }
+                }
+                if (usable) {
+                    FileElement file_element = new FileElement(file, root_directory_path_length, complete_dir);
+                    file_elements.Add(file_element);
+                }
             }
         }
 

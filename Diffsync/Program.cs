@@ -167,7 +167,7 @@ namespace Diffsync
                         }
                         parameter.FileExtensionExceptions.Clear();
                         foreach (string file_extension_exception in options.FileExtensionExceptions) {
-                            parameter.FileExtensionExceptions.Add(file_extension_exception);
+                            parameter.FileExtensionExceptions.Add(file_extension_exception.ToLower());
                         }
                     }
                 });
