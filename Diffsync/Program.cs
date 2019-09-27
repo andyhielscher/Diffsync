@@ -357,8 +357,8 @@ namespace Diffsync
                         }
                     } else {
                         // "Markierung" im Austausch-Verzeichnis löschen und im vollständigen Verzeichnis richtige Datei löschen
-                        destination_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath.Substring(0, file_element.RelativePath.Length - 6)); // Endung ".dsdel" wird abgeschnitten
-                        source_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
+                        destination_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath); 
+                        source_path = String.Format("{0}{1}.dsdel", exchange_dir, file_element.RelativePath); // Endung ".dsdel" wird hinzugefügt
                         TryToDeleteFile(destination_path);
                         TryToDeleteFile(source_path);
                     }
@@ -388,7 +388,7 @@ namespace Diffsync
                 try {
                     file.Delete();
                 } catch (IOException delete_error) {
-                    Console.WriteLine(String.Format("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen", path));
+                    Console.WriteLine(String.Format("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen.", path));
                     Console.WriteLine(delete_error.Message);
                 }
             }
