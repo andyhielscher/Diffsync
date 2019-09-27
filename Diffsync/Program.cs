@@ -122,7 +122,7 @@ namespace Diffsync
                             Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
                             Console.WriteLine("Argument: {0}", options.CompleteDirectory);
                             Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
-                            if (UserInputIsYes()) {
+                            if (parameter.UserInputIsYes()) {
                                 parameter.SetPathCompleteDir(options.CompleteDirectory);
                             }
                         }
@@ -132,7 +132,7 @@ namespace Diffsync
                             Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
                             Console.WriteLine("Argument: {0}", options.ExchangeDirectory);
                             Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
-                            if (UserInputIsYes()) {
+                            if (parameter.UserInputIsYes()) {
                                 parameter.SetPathExchangeDir(options.ExchangeDirectory);
                             }
                         }
@@ -144,7 +144,7 @@ namespace Diffsync
                             Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
                             Console.WriteLine("Argument: {0}", options.DatabaseDirectory);
                             Console.WriteLine("Soll der Pfad zur Datenbank durch Argument ersetzt werden (j/n)?");
-                            if (UserInputIsYes()) {
+                            if (parameter.UserInputIsYes()) {
                                 parameter.SetDatabaseFile(options.DatabaseDirectory);
                             }
                         }
@@ -204,7 +204,7 @@ namespace Diffsync
             // Auf Bestätigung des Users zum weiteren Programmablauf wartenConsole.WriteLine();
             Console.WriteLine("");
             Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
-            if (UserInputIsYes() == false) {
+            if (parameter.UserInputIsYes() == false) {
                 Console.WriteLine("Programm wird beendet. Datenbank wurde nicht aktualisiert. Bitte Enter drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
@@ -270,25 +270,6 @@ namespace Diffsync
                 file_element.DateCreated.ToString("yyyy-MM-dd HH:mm"),
                 file_element.DateWritten.ToString("yyyy-MM-dd HH:mm"),
                 file_element.Size);
-            }
-        }
-
-        static bool UserInputIsYes()
-        {
-            bool false_input;
-            string input;
-            do {
-                input = Console.ReadLine();
-                if (input == "j" || input == "n") {
-                    false_input = false;
-                } else {
-                    false_input = true;
-                }
-            } while (false_input);
-            if (input == "j") {
-                return (true);
-            } else {
-                return (false);
             }
         }
 

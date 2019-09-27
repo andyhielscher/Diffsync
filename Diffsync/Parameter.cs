@@ -222,41 +222,41 @@ namespace ParameterNamespace
                 int j = i + 1;
                 while (j < files_to_sync.Count() && !conflict) {
                     if (files_to_sync[i].RelativePath == files_to_sync[j].RelativePath) {
-                        // Konflikt der Dateien, auf beiden Seiten geändert
-                        Console.WriteLine("");
-                        Console.WriteLine("Konflikt zwischen folgenden Dateien:");
-                        Console.WriteLine(String.Format("[1] {0,7:##0.000} MB | Erstellt: {1} | Geändert: {2} | {3}",
-                            files_to_sync[i].Size,
-                            files_to_sync[i].DateCreated.ToString("yyyy-MM-dd HH:mm"),
-                            files_to_sync[i].DateWritten.ToString("yyyy-MM-dd HH:mm"),
-                            files_to_sync[i].Path));
-                        Console.WriteLine(String.Format("[2] {0,7:##0.000} MB | Erstellt: {1} | Geändert: {2} | {3}",
-                            files_to_sync[j].Size,
-                            files_to_sync[j].DateCreated.ToString("yyyy-MM-dd HH:mm"),
-                            files_to_sync[j].DateWritten.ToString("yyyy-MM-dd HH:mm"),
-                            files_to_sync[j].Path));
-                        Console.WriteLine("Welche Datei soll verwendet werden (1/2)?");
-                        bool false_input;
-                        string input;
-                        do {
-                            input = Console.ReadLine();
-                            if (input == "1" || input == "2") {
-                                false_input = false;
+                            // Konflikt der Dateien, auf beiden Seiten geändert
+                            Console.WriteLine("");
+                            Console.WriteLine("Konflikt zwischen folgenden Dateien:");
+                            Console.WriteLine(String.Format("[1] {0,7:##0.000} MB | Erstellt: {1} | Geändert: {2} | {3}",
+                                files_to_sync[i].Size,
+                                files_to_sync[i].DateCreated.ToString("yyyy-MM-dd HH:mm"),
+                                files_to_sync[i].DateWritten.ToString("yyyy-MM-dd HH:mm"),
+                                files_to_sync[i].Path));
+                            Console.WriteLine(String.Format("[2] {0,7:##0.000} MB | Erstellt: {1} | Geändert: {2} | {3}",
+                                files_to_sync[j].Size,
+                                files_to_sync[j].DateCreated.ToString("yyyy-MM-dd HH:mm"),
+                                files_to_sync[j].DateWritten.ToString("yyyy-MM-dd HH:mm"),
+                                files_to_sync[j].Path));
+                            Console.WriteLine("Welche Datei soll verwendet werden (1/2)?");
+                            bool false_input;
+                            string input;
+                            do {
+                                input = Console.ReadLine();
+                                if (input == "1" || input == "2") {
+                                    false_input = false;
+                                } else {
+                                    false_input = true;
+                                }
+                            } while (false_input);
+                            if (input == "1") {
+                                files_to_sync.Remove(files_to_sync[j]);
+                                Console.WriteLine("Datei 1 wird verwendet.");
+                                conflict = true;
                             } else {
-                                false_input = true;
+                                files_to_sync.Remove(files_to_sync[i]);
+                                Console.WriteLine("Datei 2 wird verwendet.");
+                                i = i - 1;
+                                conflict = true;
                             }
-                        } while (false_input);
-                        if (input == "1") {
-                            files_to_sync.Remove(files_to_sync[j]);
-                            Console.WriteLine("Datei 1 wird verwendet.");
-                            conflict = true;
-                        } else {
-                            files_to_sync.Remove(files_to_sync[i]);
-                            Console.WriteLine("Datei 2 wird verwendet.");
-                            i = i - 1;
-                            conflict = true;
                         }
-                    }
                     j++;
                 }
                 i++;
@@ -290,9 +290,18 @@ namespace ParameterNamespace
             foreach (string file_element in all_files) {
                 try {
                     File.Delete(file_element);
-                } catch (IOException delete_error) {
-                    Console.WriteLine("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen", file_element);
+                    // Workaround, weil irgendwie nicht im Cryptomator-Verzeichnis gelöscht werden kann...
+                    if (File.Exists(file_element)) {
+                        Console.WriteLine("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen.", file_element);
+                        Console.WriteLine("Wurde die Datei manuell gelöscht (j/n)?");
+                        UserInputIsYes();
+                    }
+                }
+                catch (IOException delete_error) {
+                    Console.WriteLine("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen.", file_element);
                     Console.WriteLine(delete_error.Message);
+                    Console.WriteLine("Wurde die Datei manuell gelöscht (j/n)?");
+                    UserInputIsYes();
                 }
             }
         }
@@ -309,6 +318,32 @@ namespace ParameterNamespace
 
             foreach (string sub_directory in sub_directories) {
                 DeleteEmptySubDirectories(sub_directory);
+            }
+        }
+
+        public bool UserInputIsYes()
+        {
+            bool false_input;
+            string input;
+            do
+            {
+                input = Console.ReadLine();
+                if (input == "j" || input == "n")
+                {
+                    false_input = false;
+                }
+                else
+                {
+                    false_input = true;
+                }
+            } while (false_input);
+            if (input == "j")
+            {
+                return (true);
+            }
+            else
+            {
+                return (false);
             }
         }
 
