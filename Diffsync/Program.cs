@@ -85,6 +85,16 @@ namespace Diffsync
                             error = true;
                         }
                     }
+                    foreach (string file_extension_exception in options.FileExtensionExceptions) {
+                        if (file_extension_exception.StartsWith(".") == false) {
+                            Console.WriteLine(String.Format("Fehler in FileExtensionExceptions {0}. Beginnt nicht mit \".\".", file_extension_exception));
+                            error = true;
+                        }
+                        if (file_extension_exception.Substring(1).Contains(".") == true) {
+                            Console.WriteLine(String.Format("Fehler in FileExtensionExceptions {0}. Enthält \".\".", file_extension_exception));
+                            error = true;
+                        }
+                    }
 
                     // Datenbank auf Existenz prüfen
                     FileInfo file = new FileInfo(options.DatabaseDirectory);
