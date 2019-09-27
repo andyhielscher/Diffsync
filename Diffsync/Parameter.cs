@@ -222,6 +222,33 @@ namespace ParameterNamespace
                 int j = i + 1;
                 while (j < files_to_sync.Count() && !conflict) {
                     if (files_to_sync[i].RelativePath == files_to_sync[j].RelativePath) {
+                        bool conflict2 = true;
+                        if (files_to_sync[i].WillBeDeleted && files_to_sync[j].WillBeDeleted) {
+                            // kein Konflikt der Dateien, i und j gelöscht
+                            conflict2 = false;
+                        } else if (files_to_sync[i].WillBeDeleted) {
+                            // Konflikt der Dateien, i gelöscht
+                            Console.WriteLine("");
+                            Console.WriteLine("Konflikt zwischen folgenden Dateien:");
+                            Console.WriteLine(String.Format("[1] {0} wurde gelöscht", files_to_sync[i].Path));
+                            Console.WriteLine(String.Format("[2] {0,7:##0.000} MB | Erstellt: {1} | Geändert: {2} | {3}",
+                                files_to_sync[j].Size,
+                                files_to_sync[j].DateCreated.ToString("yyyy-MM-dd HH:mm"),
+                                files_to_sync[j].DateWritten.ToString("yyyy-MM-dd HH:mm"),
+                                files_to_sync[j].Path));
+                            Console.WriteLine("Welche Datei soll verwendet werden (1/2)?");
+                        } else if (files_to_sync[j].WillBeDeleted) {
+                            // Konflikt der Dateien, j gelöscht
+                            Console.WriteLine("");
+                            Console.WriteLine("Konflikt zwischen folgenden Dateien:");
+                            Console.WriteLine(String.Format("[1] {0,7:##0.000} MB | Erstellt: {1} | Geändert: {2} | {3}",
+                                files_to_sync[i].Size,
+                                files_to_sync[i].DateCreated.ToString("yyyy-MM-dd HH:mm"),
+                                files_to_sync[i].DateWritten.ToString("yyyy-MM-dd HH:mm"),
+                                files_to_sync[i].Path));
+                            Console.WriteLine(String.Format("[2] {0} wurde gelöscht", files_to_sync[j].Path));
+                            Console.WriteLine("Welche Datei soll verwendet werden (1/2)?");
+                        } else {
                             // Konflikt der Dateien, auf beiden Seiten geändert
                             Console.WriteLine("");
                             Console.WriteLine("Konflikt zwischen folgenden Dateien:");
@@ -236,6 +263,8 @@ namespace ParameterNamespace
                                 files_to_sync[j].DateWritten.ToString("yyyy-MM-dd HH:mm"),
                                 files_to_sync[j].Path));
                             Console.WriteLine("Welche Datei soll verwendet werden (1/2)?");
+                        }
+                        if (conflict2) {
                             bool false_input;
                             string input;
                             do {
@@ -257,6 +286,7 @@ namespace ParameterNamespace
                                 conflict = true;
                             }
                         }
+                    }
                     j++;
                 }
                 i++;
