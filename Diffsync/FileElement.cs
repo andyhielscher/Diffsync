@@ -92,6 +92,7 @@ namespace FileElementNamespace
             this._from_complete_dir = complete_dir;
             if (path.EndsWith(".dsdel")) {
                 this._will_be_deleted = true;
+                this._path = path.Substring(0, path.Length - 6); // Endung ".dsdel" wird abgeschnitten
             }
         }
 

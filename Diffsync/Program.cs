@@ -28,7 +28,7 @@ namespace Diffsync
             [Option("DirectoryExceptions", Separator = ';', Required = false, HelpText = "Auflistung von (verschachtelten) Verzeichnissen, welche nicht synchronisiert werden sollen. Z.B. DirectoryExceptions=\"\\Erstes Verzeichnis;\\Test\\Test\". Trennzeichen: \";\"")]
             public IEnumerable<string> DirectoryExceptions { get; set; }
 
-            [Option("FileExtensionExceptions", Separator = ';', Required = false, HelpText = "Auflistung von Dateiendungen, welche nicht synchronisiert werden sollen. Z.B. FileExtensionExceptions=\".exe\". Trennzeichen: \";\" Noch nicht unterstützt!")]
+            [Option("FileExtensionExceptions", Separator = ';', Required = false, HelpText = "Auflistung von Dateiendungen, welche nicht synchronisiert werden sollen. Z.B. FileExtensionExceptions=\".exe\". Trennzeichen: \";\"")]
             public IEnumerable<string> FileExtensionExceptions { get; set; }
 
             [Option("DateSync", Required = false, HelpText = "Einmalige Eingabe. Gibt den Startzeitpunkt der ersten Synchronsierung an. Z.B. DateSync=\"YYYY-MM-TT hh:mm\"")]
@@ -85,6 +85,16 @@ namespace Diffsync
                             error = true;
                         }
                     }
+                    foreach (string file_extension_exception in options.FileExtensionExceptions) {
+                        if (file_extension_exception.StartsWith(".") == false) {
+                            Console.WriteLine(String.Format("Fehler in FileExtensionExceptions {0}. Beginnt nicht mit \".\".", file_extension_exception));
+                            error = true;
+                        }
+                        if (file_extension_exception.Substring(1).Contains(".") == true) {
+                            Console.WriteLine(String.Format("Fehler in FileExtensionExceptions {0}. Enthält \".\".", file_extension_exception));
+                            error = true;
+                        }
+                    }
 
                     // Datenbank auf Existenz prüfen
                     FileInfo file = new FileInfo(options.DatabaseDirectory);
@@ -122,7 +132,7 @@ namespace Diffsync
                             Console.WriteLine("Datenbank: {0}", parameter.PathCompleteDir.TrimEnd('\\'));
                             Console.WriteLine("Argument: {0}", options.CompleteDirectory);
                             Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
-                            if (UserInputIsYes()) {
+                            if (parameter.UserInputIsYes()) {
                                 parameter.SetPathCompleteDir(options.CompleteDirectory);
                             }
                         }
@@ -132,7 +142,7 @@ namespace Diffsync
                             Console.WriteLine("Datenbank: {0}", parameter.PathExchangeDir.TrimEnd('\\'));
                             Console.WriteLine("Argument: {0}", options.ExchangeDirectory);
                             Console.WriteLine("Soll das Verzeichnis der Datenbank ersetzt werden (j/n)?");
-                            if (UserInputIsYes()) {
+                            if (parameter.UserInputIsYes()) {
                                 parameter.SetPathExchangeDir(options.ExchangeDirectory);
                             }
                         }
@@ -144,7 +154,7 @@ namespace Diffsync
                             Console.WriteLine("Datenbank: {0}", parameter.DatabaseFile);
                             Console.WriteLine("Argument: {0}", options.DatabaseDirectory);
                             Console.WriteLine("Soll der Pfad zur Datenbank durch Argument ersetzt werden (j/n)?");
-                            if (UserInputIsYes()) {
+                            if (parameter.UserInputIsYes()) {
                                 parameter.SetDatabaseFile(options.DatabaseDirectory);
                             }
                         }
@@ -167,7 +177,7 @@ namespace Diffsync
                         }
                         parameter.FileExtensionExceptions.Clear();
                         foreach (string file_extension_exception in options.FileExtensionExceptions) {
-                            parameter.FileExtensionExceptions.Add(file_extension_exception);
+                            parameter.FileExtensionExceptions.Add(file_extension_exception.ToLower());
                         }
                     }
                 });
@@ -204,7 +214,7 @@ namespace Diffsync
             // Auf Bestätigung des Users zum weiteren Programmablauf wartenConsole.WriteLine();
             Console.WriteLine("");
             Console.WriteLine("Soll mit dem Kopieren begonnen werden (j/n)?");
-            if (UserInputIsYes() == false) {
+            if (parameter.UserInputIsYes() == false) {
                 Console.WriteLine("Programm wird beendet. Datenbank wurde nicht aktualisiert. Bitte Enter drücken.");
                 Console.ReadLine();
                 Environment.Exit(0);
@@ -273,25 +283,6 @@ namespace Diffsync
             }
         }
 
-        static bool UserInputIsYes()
-        {
-            bool false_input;
-            string input;
-            do {
-                input = Console.ReadLine();
-                if (input == "j" || input == "n") {
-                    false_input = false;
-                } else {
-                    false_input = true;
-                }
-            } while (false_input);
-            if (input == "j") {
-                return (true);
-            } else {
-                return (false);
-            }
-        }
-
         static void SyncFiles(ref List<FileElement> files_to_sync, string complete_dir, string exchange_dir)
         {
             string destination_path,
@@ -357,8 +348,8 @@ namespace Diffsync
                         }
                     } else {
                         // "Markierung" im Austausch-Verzeichnis löschen und im vollständigen Verzeichnis richtige Datei löschen
-                        destination_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath.Substring(0, file_element.RelativePath.Length - 6)); // Endung ".dsdel" wird abgeschnitten
-                        source_path = String.Format("{0}{1}", exchange_dir, file_element.RelativePath);
+                        destination_path = String.Format("{0}{1}", complete_dir, file_element.RelativePath); 
+                        source_path = String.Format("{0}{1}.dsdel", exchange_dir, file_element.RelativePath); // Endung ".dsdel" wird hinzugefügt
                         TryToDeleteFile(destination_path);
                         TryToDeleteFile(source_path);
                     }
@@ -388,7 +379,7 @@ namespace Diffsync
                 try {
                     file.Delete();
                 } catch (IOException delete_error) {
-                    Console.WriteLine(String.Format("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen", path));
+                    Console.WriteLine(String.Format("Die Datei {0} kann nicht gelöscht werden. Bitte manuell löschen.", path));
                     Console.WriteLine(delete_error.Message);
                 }
             }
