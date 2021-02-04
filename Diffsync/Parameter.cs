@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Text;
 using FileElementNamespace;
 
 namespace ParameterNamespace
@@ -348,7 +349,11 @@ namespace ParameterNamespace
         public void SetFileHook()
         {
             FileInfo file = new FileInfo(this._file_hook);
-            file.Create();
+            using (FileStream fs = file.Create())
+            {
+                Byte[] txt = new UTF8Encoding(true).GetBytes(String.Format("This Filehook belongs to project {0}", this._file_hook.Substring(this._file_hook.LastIndexOf('\\') + 1, this._file_hook.LastIndexOf('.') - this._file_hook.LastIndexOf('\\') - 1)));
+                fs.Write(txt, 0, txt.Length);
+            }
         }
 
         public void DeleteEmptyExchangeDirectories()
